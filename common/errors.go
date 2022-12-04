@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-var TotalPath = *flag.String("oa", "data/openAlex", "the config file")
+var TotalPath = *flag.String("oa", "/home/diamond/soft2/data/openalex", "the config file")
 
 //type errorRecorder struct {
 //	NowIndex    int64

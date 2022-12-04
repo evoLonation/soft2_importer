@@ -84,11 +84,11 @@ package openAlex
 //	fmt.Printf("load file to create scanner\n")
 //	defer fmt.Printf("create scanner done\n")
 //	err := os.Chdir(common.TotalPath)
-//	fatalError(err)
+//	FatalError(err)
 //	err = os.Chdir(p.relativePath)
-//	fatalError(err)
+//	FatalError(err)
 //	fileInfos, err := ioutil.ReadDir(".")
-//	fatalError(err)
+//	FatalError(err)
 //	var dirs []string
 //	for _, info := range fileInfos {
 //		if info.IsDir() && strings.Contains(info.Name(), p.directoryPrefix) {
@@ -105,7 +105,7 @@ package openAlex
 //		}
 //		for _, fileinfo := range subfileInfos {
 //			file, err := os.Open(dirs[i] + "/" + fileinfo.Name())
-//			fatalError(err)
+//			FatalError(err)
 //			files = append(files, file)
 //		}
 //	}
