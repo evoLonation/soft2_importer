@@ -9,12 +9,14 @@ import (
 	"soft2_importer/openAlex"
 )
 
-var TotalPath = flag.String("oa", "/home/diamond/soft2/data/openalex", "the config file")
+var totalPath = flag.String("oa", "/home/diamond/soft2/data/openalex", "the config file")
+var startDir = flag.String("sd", "", "the directory to start, if empty , start from newest directory")
 
 func main() {
 	flag.Parse()
-	fmt.Printf("totalpath : %s\n", *TotalPath)
-	openAlex.TotalPath = *TotalPath
+	fmt.Printf("totalpath : %s\n", *totalPath)
+	openAlex.TotalPath = *totalPath
+	openAlex.StartDir = *startDir
 	logOutput()
 	println("welcome to importer")
 	openAlex.ImportScholars()

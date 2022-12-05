@@ -55,6 +55,7 @@ func init() {
 
 //updated_date=2022-08-28
 var TotalPath string
+var StartDir string
 var relativePath = "authors"
 var directoryPrefix string = "updated_date="
 var loadTime int64
@@ -105,7 +106,19 @@ func createScanner() *bufio.Scanner {
 		}
 	}
 	sort.Strings(dirs)
-
+	if StartDir != "" {
+		fmt.Printf("start from directory %s", StartDir)
+		i := len(dirs) - 1
+		for ; i >= 0; i-- {
+			if dirs[i] == StartDir {
+				dirs = dirs[:i+1]
+				break
+			}
+		}
+		if i < 0 {
+			log.Fatalf("error: can not find start directory %s\n", StartDir)
+		}
+	}
 	var files []string
 	for i := len(dirs) - 1; i >= 0; i-- {
 		subfileInfos, err := ioutil.ReadDir(dirs[i])

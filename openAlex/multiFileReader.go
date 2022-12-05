@@ -73,7 +73,7 @@ func (p *multiFileReader) Read(buf []byte) (int, error) {
 		} else if totaln > len(buf) {
 			log.Fatal("totaln should not greater than %s\n", len(buf))
 		} else if totaln < len(buf) {
-			fmt.Printf("the file %s are read done, swap to next file\n", p.currentJsonlFile.Name())
+			fmt.Printf("the file %s are read done\n", p.currentJsonlFile.Name())
 			err := p.currentJsonlFile.Close()
 			FatalError(err)
 			err = os.Remove(p.currentJsonlFile.Name())
@@ -86,6 +86,7 @@ func (p *multiFileReader) Read(buf []byte) (int, error) {
 			jsonlname := gunzip(p.gzfiles[p.currentIndex])
 			p.currentJsonlFile, err = os.Open(jsonlname)
 			FatalError(err)
+			fmt.Printf("swap to next file : %s\n", p.currentJsonlFile.Name())
 		}
 	}
 	return totaln, nil
