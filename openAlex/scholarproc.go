@@ -69,11 +69,11 @@ var LogDetail bool = false
 
 func getOriginScholars(scanner *bufio.Scanner) []*OAScholar {
 	if LogDetail {
-		fmt.Printf("load OAScholar structs......\n")
+		log.Printf("load OAScholar structs......\n")
 	}
 	defer func() {
 		if LogDetail {
-			fmt.Printf("load OAScholar structs done\n")
+			log.Printf("load OAScholar structs done\n")
 		}
 	}()
 	origins := make([]*OAScholar, oneBulkNum)
