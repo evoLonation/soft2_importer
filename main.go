@@ -13,16 +13,23 @@ import (
 
 var totalPath = flag.String("oa", "/home/diamond/soft2/data/openalex", "the config file")
 var startDir = flag.String("sd", "", "the directory to start, if empty , start from newest directory")
+var logDetail = flag.Bool("ld", false, "whether or not log detail")
+var sendEmail = flag.Bool("se", false, "whether or not send email when error")
 
 func main() {
-	defer SendEmail()
+	flag.Parse()
+	defer func() {
+		if *sendEmail {
+			SendEmail()
+		}
+	}()
 	logFile, err := os.Create("log.txt")
 	openAlex.PanicError(err)
 	log.SetOutput(logFile)
-	flag.Parse()
 	log.Printf("totalpath : %s\n", *totalPath)
 	openAlex.TotalPath = *totalPath
 	openAlex.StartDir = *startDir
+	openAlex.LogDetail = *logDetail
 	logOutput()
 	log.Println("welcome to importer")
 	openAlex.ImportScholars()

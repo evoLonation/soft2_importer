@@ -64,10 +64,17 @@ var oneBulkNum int = 1024
 var lineLength int = 1 << 18 // 256k
 var totalNum int64
 var logInterval int64 = 100000
+var LogDetail bool = false
 
 func getOriginScholars(scanner *bufio.Scanner) []*OAScholar {
-	//fmt.Printf("load OAScholar structs......\n")
-	//defer fmt.Printf("load OAScholar structs done\n")
+	if LogDetail {
+		fmt.Printf("load OAScholar structs......\n")
+	}
+	defer func() {
+		if LogDetail {
+			fmt.Printf("load OAScholar structs done\n")
+		}
+	}()
 	origins := make([]*OAScholar, oneBulkNum)
 	//读取一行
 	i := 0
@@ -144,12 +151,14 @@ func ImportScholars() {
 	start := time.Now()
 	log.Printf("start to import scholars to es!\n")
 	defer func() {
-		log.Printf("done import, no error! \ntotal number is %d\n time: from %s to %s, duration %s", totalNum, start, time.Now(), time.Since(start))
+		log.Printf("quit import, \ntotal number is %d\n time: from %s to %s, duration %s", totalNum, start, time.Now(), time.Since(start))
 	}()
 	scanner := createScanner()
 	nextLogNum := logInterval
 	for {
-		//fmt.Printf("%d'st iteration...\n", loadTime)
+		if LogDetail {
+			log.Printf("%d'st iteration...\n", loadTime)
+		}
 		originScholars := getOriginScholars(scanner)
 		if len(originScholars) == 0 {
 			break
@@ -159,7 +168,9 @@ func ImportScholars() {
 			targetScholars[i] = e.Parse()
 		}
 		importScholarToES(targetScholars)
-		//fmt.Printf("%d'st iteration done!\n", loadTime)
+		if LogDetail {
+			log.Printf("%d'st iteration done!\n", loadTime)
+		}
 		loadTime++
 		totalNum += int64(len(originScholars))
 		for totalNum > nextLogNum {
@@ -170,7 +181,9 @@ func ImportScholars() {
 }
 
 func importScholarToES(targets []*types.Scholar) {
-	//fmt.Printf("send created bulk request to ES...\n")
+	if LogDetail {
+		log.Printf("send created bulk request to ES...\n")
+	}
 	//对于每个targets，先判断是否有效，有效就创建
 	buffer := bytes.Buffer{}
 	for _, target := range targets {
@@ -205,5 +218,7 @@ func importScholarToES(targets []*types.Scholar) {
 			}
 		}
 	}
-	//fmt.Printf("send done\n")
+	if LogDetail {
+		log.Printf("send done\n")
+	}
 }
