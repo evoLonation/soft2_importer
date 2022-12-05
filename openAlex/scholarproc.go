@@ -54,6 +54,7 @@ func init() {
 }
 
 //updated_date=2022-08-28
+var TotalPath string
 var relativePath = "authors"
 var directoryPrefix string = "updated_date="
 var loadTime int64
@@ -91,7 +92,7 @@ func FatalError(err error) {
 func createScanner() *bufio.Scanner {
 	fmt.Printf("load file to create scanner\n")
 	defer fmt.Printf("create scanner done\n")
-	err := os.Chdir(common.TotalPath)
+	err := os.Chdir(TotalPath)
 	FatalError(err)
 	err = os.Chdir(relativePath)
 	FatalError(err)
@@ -105,16 +106,16 @@ func createScanner() *bufio.Scanner {
 	}
 	sort.Strings(dirs)
 
-	var files []*os.File
+	var files []string
 	for i := len(dirs) - 1; i >= 0; i-- {
 		subfileInfos, err := ioutil.ReadDir(dirs[i])
 		if err != nil {
 			log.Fatal(err)
 		}
 		for _, fileinfo := range subfileInfos {
-			file, err := os.Open(dirs[i] + "/" + fileinfo.Name())
-			FatalError(err)
-			files = append(files, file)
+			if strings.HasSuffix(fileinfo.Name(), ".gz") {
+				files = append(files, dirs[i]+"/"+fileinfo.Name())
+			}
 		}
 	}
 	reader := MultiFileReaderFactory(files)

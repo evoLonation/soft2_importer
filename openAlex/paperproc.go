@@ -97,7 +97,7 @@ package openAlex
 //	}
 //	sort.Strings(dirs)
 //
-//	var files []*os.File
+//	var gzfiles []*os.File
 //	for i := len(dirs) - 1; i >= 0; i-- {
 //		subfileInfos, err := ioutil.ReadDir(dirs[i])
 //		if err != nil {
@@ -106,10 +106,10 @@ package openAlex
 //		for _, fileinfo := range subfileInfos {
 //			file, err := os.Open(dirs[i] + "/" + fileinfo.Name())
 //			FatalError(err)
-//			files = append(files, file)
+//			gzfiles = append(gzfiles, file)
 //		}
 //	}
-//	reader := MultiFileReaderFactory(files)
+//	reader := MultiFileReaderFactory(gzfiles)
 //	scanner := bufio.NewScanner(reader)
 //	buf := make([]byte, p.lineLength)
 //	scanner.Buffer(buf, p.lineLength)

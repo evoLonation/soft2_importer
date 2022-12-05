@@ -2,12 +2,9 @@ package common
 
 import (
 	"encoding/json"
-	"flag"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"log"
 )
-
-var TotalPath = *flag.String("oa", "/home/diamond/soft2/data/openalex", "the config file")
 
 //type errorRecorder struct {
 //	NowIndex    int64
