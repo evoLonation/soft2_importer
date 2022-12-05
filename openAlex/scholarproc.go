@@ -65,8 +65,8 @@ var totalNum int64
 var logInterval int64 = 10000
 
 func getOriginScholars(scanner *bufio.Scanner) []*OAScholar {
-	fmt.Printf("load OAScholar structs......\n")
-	defer fmt.Printf("load OAScholar structs done\n")
+	//fmt.Printf("load OAScholar structs......\n")
+	//defer fmt.Printf("load OAScholar structs done\n")
 	origins := make([]*OAScholar, oneBulkNum)
 	//读取一行
 	i := 0
