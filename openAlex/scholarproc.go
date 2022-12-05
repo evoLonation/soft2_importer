@@ -108,7 +108,7 @@ func createScanner() *bufio.Scanner {
 	}
 	sort.Strings(dirs)
 	if StartDir != "" {
-		fmt.Printf("start from directory %s", StartDir)
+		fmt.Printf("start from directory %s\n", StartDir)
 		i := len(dirs) - 1
 		for ; i >= 0; i-- {
 			if dirs[i] == StartDir {
@@ -148,7 +148,7 @@ func ImportScholars() {
 	scanner := createScanner()
 	nextLogNum := logInterval
 	for {
-		fmt.Printf("%d'st iteration...\n", loadTime)
+		//fmt.Printf("%d'st iteration...\n", loadTime)
 		originScholars := getOriginScholars(scanner)
 		if len(originScholars) == 0 {
 			break
@@ -158,11 +158,11 @@ func ImportScholars() {
 			targetScholars[i] = e.Parse()
 		}
 		importScholarToES(targetScholars)
-		fmt.Printf("%d'st iteration done!\n", loadTime)
+		//fmt.Printf("%d'st iteration done!\n", loadTime)
 		loadTime++
 		totalNum += int64(len(originScholars))
 		for totalNum > nextLogNum {
-			fmt.Printf("already import %d lines...\n", totalNum)
+			fmt.Printf("already import %d lines, send %d bulk requests...\n", totalNum, loadTime)
 			nextLogNum += logInterval
 		}
 	}
