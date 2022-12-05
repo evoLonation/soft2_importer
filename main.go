@@ -69,6 +69,7 @@ func logOutput() func() {
 
 }
 func SendEmail() {
+	log.Printf("send email to 20373389@buaa.edu.cn\n")
 	e := email.NewEmail()
 	e.From = fmt.Sprintf("您的程序 <1838940019@qq.com>")
 	e.To = []string{"20373389@buaa.edu.cn"}
