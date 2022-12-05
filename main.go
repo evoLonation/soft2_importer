@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -13,12 +12,15 @@ var totalPath = flag.String("oa", "/home/diamond/soft2/data/openalex", "the conf
 var startDir = flag.String("sd", "", "the directory to start, if empty , start from newest directory")
 
 func main() {
+	logFile, err := os.Create("log.txt")
+	openAlex.FatalError(err)
+	log.SetOutput(logFile)
 	flag.Parse()
-	fmt.Printf("totalpath : %s\n", *totalPath)
+	log.Printf("totalpath : %s\n", *totalPath)
 	openAlex.TotalPath = *totalPath
 	openAlex.StartDir = *startDir
 	logOutput()
-	println("welcome to importer")
+	log.Println("welcome to importer")
 	openAlex.ImportScholars()
 	//ImportPapers()
 }
@@ -66,7 +68,7 @@ func logOutput() func() {
 //
 //}
 //func ImportPapers() {
-//	print("start import papers")
+//	log.Println("start import papers")
 //	for {
 //		originPapers := GetOAArticles()
 //		if len(originPapers) == 0 {

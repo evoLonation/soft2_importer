@@ -92,8 +92,8 @@ func FatalError(err error) {
 	}
 }
 func createScanner() *bufio.Scanner {
-	fmt.Printf("load file to create scanner\n")
-	defer fmt.Printf("create scanner done\n")
+	log.Printf("load file to create scanner\n")
+	defer log.Printf("create scanner done\n")
 	err := os.Chdir(TotalPath)
 	FatalError(err)
 	err = os.Chdir(relativePath)
@@ -108,7 +108,7 @@ func createScanner() *bufio.Scanner {
 	}
 	sort.Strings(dirs)
 	if StartDir != "" {
-		fmt.Printf("start from directory %s\n", StartDir)
+		log.Printf("start from directory %s\n", StartDir)
 		i := len(dirs) - 1
 		for ; i >= 0; i-- {
 			if dirs[i] == StartDir {
@@ -141,9 +141,9 @@ func createScanner() *bufio.Scanner {
 
 func ImportScholars() {
 	start := time.Now()
-	fmt.Printf("start to import scholars to es!\n")
+	log.Printf("start to import scholars to es!\n")
 	defer func() {
-		fmt.Printf("done import, no error! \ntotal number is %d\n time: from %s to %s, duration %s", totalNum, start, time.Now(), time.Since(start))
+		log.Printf("done import, no error! \ntotal number is %d\n time: from %s to %s, duration %s", totalNum, start, time.Now(), time.Since(start))
 	}()
 	scanner := createScanner()
 	nextLogNum := logInterval
@@ -162,7 +162,7 @@ func ImportScholars() {
 		loadTime++
 		totalNum += int64(len(originScholars))
 		for totalNum > nextLogNum {
-			fmt.Printf("already import %d lines, send %d bulk requests...\n", totalNum, loadTime)
+			log.Printf("already import %d lines, send %d bulk requests...\n", totalNum, loadTime)
 			nextLogNum += logInterval
 		}
 	}

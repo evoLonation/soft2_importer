@@ -1,7 +1,6 @@
 package openAlex
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -16,9 +15,9 @@ type multiFileReader struct {
 }
 
 func MultiFileReaderFactory(gzfiles []string) *multiFileReader {
-	fmt.Printf("build a multi gz file reader, gz files : \n")
+	log.Printf("build a multi gz file reader, gz files : \n")
 	for _, file := range gzfiles {
-		println(file)
+		log.Println(file)
 	}
 	firstJsonlname := gunzip(gzfiles[0])
 	firstJsonFile, err := os.Open(firstJsonlname)
@@ -32,7 +31,7 @@ func gunzip(file string) string {
 	if !strings.HasSuffix(file, ".gz") {
 		log.Fatalf("该文件不是.gz文件 : %s", file)
 	}
-	fmt.Printf("gunzip file %s...", file)
+	log.Printf("gunzip file %s...", file)
 	cmd := exec.Command("/bin/bash", "-c", `gunzip -k -f `+file)
 	output, err := cmd.StdoutPipe()
 	if err != nil {
@@ -44,8 +43,8 @@ func gunzip(file string) string {
 	bytes, err := ioutil.ReadAll(output)
 	FatalError(err)
 	FatalError(cmd.Wait())
-	fmt.Printf("unzip done\n")
-	fmt.Printf("命令输出：\n%s\n", string(bytes))
+	log.Printf("unzip done\n")
+	log.Printf("命令输出：\n%s\n", string(bytes))
 	before, _, _ := strings.Cut(file, ".gz")
 	return before
 }
@@ -53,7 +52,7 @@ func gunzip(file string) string {
 func (p *multiFileReader) Read(buf []byte) (int, error) {
 	totaln := 0
 	if p.currentIndex >= len(p.gzfiles) {
-		fmt.Printf("all file are read done\n")
+		log.Printf("all file are read done\n")
 		return totaln, nil
 	}
 	//fmt.Printf("read %d bytes from gzfiles! begin from file %s\n", len(buf), p.currentJsonlFile.Name())
@@ -73,20 +72,20 @@ func (p *multiFileReader) Read(buf []byte) (int, error) {
 		} else if totaln > len(buf) {
 			log.Fatal("totaln should not greater than %s\n", len(buf))
 		} else if totaln < len(buf) {
-			fmt.Printf("the file %s are read done\n", p.currentJsonlFile.Name())
+			log.Printf("the file %s are read done\n", p.currentJsonlFile.Name())
 			err := p.currentJsonlFile.Close()
 			FatalError(err)
 			err = os.Remove(p.currentJsonlFile.Name())
 			FatalError(err)
 			p.currentIndex++
 			if p.currentIndex >= len(p.gzfiles) {
-				fmt.Printf("all file are read done\n")
+				log.Printf("all file are read done\n")
 				return totaln, nil
 			}
 			jsonlname := gunzip(p.gzfiles[p.currentIndex])
 			p.currentJsonlFile, err = os.Open(jsonlname)
 			FatalError(err)
-			fmt.Printf("swap to next file : %s\n", p.currentJsonlFile.Name())
+			log.Printf("swap to next file : %s\n", p.currentJsonlFile.Name())
 		}
 	}
 	return totaln, nil
