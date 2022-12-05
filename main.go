@@ -9,11 +9,12 @@ import (
 	"soft2_importer/openAlex"
 )
 
-var TotalPath = *flag.String("oa", "/home/diamond/soft2/data/openalex", "the config file")
+var TotalPath = flag.String("oa", "/home/diamond/soft2/data/openalex", "the config file")
 
 func main() {
-	fmt.Printf("totalpath : %s", TotalPath)
-	openAlex.TotalPath = TotalPath
+	flag.Parse()
+	fmt.Printf("totalpath : %s\n", *TotalPath)
+	openAlex.TotalPath = *TotalPath
 	logOutput()
 	println("welcome to importer")
 	openAlex.ImportScholars()
