@@ -56,8 +56,8 @@ func (p *multiFileReader) Read(buf []byte) (int, error) {
 		fmt.Printf("all file are read done\n")
 		return totaln, nil
 	}
-	fmt.Printf("read %d bytes from gzfiles! begin from file %s\n", len(buf), p.currentJsonlFile.Name())
-	defer fmt.Printf("read file done!\n")
+	//fmt.Printf("read %d bytes from gzfiles! begin from file %s\n", len(buf), p.currentJsonlFile.Name())
+	//defer fmt.Printf("read file done!\n")
 	for {
 		if p.currentIndex >= len(p.gzfiles) {
 			return totaln, nil
@@ -66,7 +66,7 @@ func (p *multiFileReader) Read(buf []byte) (int, error) {
 		if err != nil {
 			log.Fatalf("read file %s error!\n %s\n", p.currentJsonlFile.Name(), err.Error())
 		}
-		fmt.Printf("read %d bytes into [%d-%d) from file %s\n", tmp, totaln, totaln+tmp, p.currentJsonlFile.Name())
+		//fmt.Printf("read %d bytes into [%d-%d) from file %s\n", tmp, totaln, totaln+tmp, p.currentJsonlFile.Name())
 		totaln += tmp
 		if totaln == len(buf) {
 			break

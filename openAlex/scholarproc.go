@@ -62,6 +62,7 @@ var loadTime int64
 var oneBulkNum int = 1024
 var lineLength int = 1 << 18 // 256k
 var totalNum int64
+var logInterval int64 = 10000
 
 func getOriginScholars(scanner *bufio.Scanner) []*OAScholar {
 	fmt.Printf("load OAScholar structs......\n")
@@ -145,6 +146,7 @@ func ImportScholars() {
 		fmt.Printf("done import, no error! \ntotal number is %d\n time: from %s to %s, duration %s", totalNum, start, time.Now(), time.Since(start))
 	}()
 	scanner := createScanner()
+	nextLogNum := logInterval
 	for {
 		fmt.Printf("%d'st iteration...\n", loadTime)
 		originScholars := getOriginScholars(scanner)
@@ -159,11 +161,15 @@ func ImportScholars() {
 		fmt.Printf("%d'st iteration done!\n", loadTime)
 		loadTime++
 		totalNum += int64(len(originScholars))
+		for totalNum > nextLogNum {
+			fmt.Printf("already import %d lines...\n", totalNum)
+			nextLogNum += logInterval
+		}
 	}
 }
 
 func importScholarToES(targets []*types.Scholar) {
-	fmt.Printf("send created bulk request to ES...\n")
+	//fmt.Printf("send created bulk request to ES...\n")
 	//对于每个targets，先判断是否有效，有效就创建
 	buffer := bytes.Buffer{}
 	for _, target := range targets {
@@ -198,5 +204,5 @@ func importScholarToES(targets []*types.Scholar) {
 			}
 		}
 	}
-	fmt.Printf("send done\n")
+	//fmt.Printf("send done\n")
 }
