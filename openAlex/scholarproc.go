@@ -49,7 +49,8 @@ func init() {
 			"http://127.0.0.1:9200",
 		},
 	}
-	es, _ = elasticsearch.NewClient(cfg)
+	es, err := elasticsearch.NewClient(cfg)
+	PanicError(err)
 	log.Println(es.Info())
 }
 
@@ -75,7 +76,7 @@ func getOriginScholars(scanner *bufio.Scanner) []*OAScholar {
 		origin := &OAScholar{}
 		err := json.Unmarshal(line, origin)
 		if err != nil {
-			log.Fatalf("\nUnmarshal %d'st string to OAScholar error : "+err.Error()+"\nthe string is %s", i+1, string(line))
+			log.Panicf("\nUnmarshal %d'st string to OAScholar error : "+err.Error()+"\nthe string is %s", i+1, string(line))
 		}
 		origins[i] = origin
 		i++
@@ -86,20 +87,20 @@ func getOriginScholars(scanner *bufio.Scanner) []*OAScholar {
 	return origins[:i]
 }
 
-func FatalError(err error) {
+func PanicError(err error) {
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 }
 func createScanner() *bufio.Scanner {
 	log.Printf("load file to create scanner\n")
 	defer log.Printf("create scanner done\n")
 	err := os.Chdir(TotalPath)
-	FatalError(err)
+	PanicError(err)
 	err = os.Chdir(relativePath)
-	FatalError(err)
+	PanicError(err)
 	fileInfos, err := ioutil.ReadDir(".")
-	FatalError(err)
+	PanicError(err)
 	var dirs []string
 	for _, info := range fileInfos {
 		if info.IsDir() && strings.Contains(info.Name(), directoryPrefix) {
@@ -117,14 +118,14 @@ func createScanner() *bufio.Scanner {
 			}
 		}
 		if i < 0 {
-			log.Fatalf("error: can not find start directory %s\n", StartDir)
+			log.Panicf("error: can not find start directory %s\n", StartDir)
 		}
 	}
 	var files []string
 	for i := len(dirs) - 1; i >= 0; i-- {
 		subfileInfos, err := ioutil.ReadDir(dirs[i])
 		if err != nil {
-			log.Fatal(err)
+			log.Panic(err)
 		}
 		for _, fileinfo := range subfileInfos {
 			if strings.HasSuffix(fileinfo.Name(), ".gz") {
@@ -179,7 +180,7 @@ func importScholarToES(targets []*types.Scholar) {
 		meta := []byte(fmt.Sprintf(authorCreateMeta, target.Id, "\n"))
 		data, err := json.Marshal(target)
 		if err != nil {
-			log.Fatal("marshal struct to string error: \n", err.Error())
+			log.Panic("marshal struct to string error: \n", err.Error())
 		}
 		data = append(data, "\n"...)
 		buffer.Grow(len(meta) + len(data))
@@ -188,18 +189,18 @@ func importScholarToES(targets []*types.Scholar) {
 	}
 	res, err := es.Bulk(bytes.NewReader(buffer.Bytes()))
 	if err != nil {
-		log.Fatal("execute es.Bulk occurs error: \n", err.Error())
+		log.Panic("execute es.Bulk occurs error: \n", err.Error())
 	}
 	common.HandleResponseError(res)
 	block := CreatedBulkResponse{}
 	if err := json.NewDecoder(res.Body).Decode(&block); err != nil {
-		log.Fatal("parse response body error:\n", err)
+		log.Panic("parse response body error:\n", err)
 	} else {
 		if block.Errors {
 			for _, item := range block.Items {
 				status := item.Create.Status
 				if status != 409 && status != 201 {
-					log.Fatal("es internal error:\n", strconv.Itoa(item.Create.Status), item.Create.Error.Type, item.Create.Error.Reason)
+					log.Panic("es internal error:\n", strconv.Itoa(item.Create.Status), item.Create.Error.Type, item.Create.Error.Reason)
 				}
 			}
 		}

@@ -69,7 +69,7 @@ package openAlex
 //		origin := new(S)
 //		err := json.Unmarshal(line, origin)
 //		if err != nil {
-//			log.Fatalf("\nUnmarshal %d'st string to %s error : "+err.Error()+"\nthe string is %s", i+1, p.originStructName, string(line))
+//			log.Panicf("\nUnmarshal %d'st string to %s error : "+err.Error()+"\nthe string is %s", i+1, p.originStructName, string(line))
 //		}
 //		origins[i] = origin
 //		i++
@@ -84,11 +84,11 @@ package openAlex
 //	fmt.Printf("load file to create scanner\n")
 //	defer fmt.Printf("create scanner done\n")
 //	err := os.Chdir(common.TotalPath)
-//	FatalError(err)
+//	PanicError(err)
 //	err = os.Chdir(p.relativePath)
-//	FatalError(err)
+//	PanicError(err)
 //	fileInfos, err := ioutil.ReadDir(".")
-//	FatalError(err)
+//	PanicError(err)
 //	var dirs []string
 //	for _, info := range fileInfos {
 //		if info.IsDir() && strings.Contains(info.Name(), p.directoryPrefix) {
@@ -101,11 +101,11 @@ package openAlex
 //	for i := len(dirs) - 1; i >= 0; i-- {
 //		subfileInfos, err := ioutil.ReadDir(dirs[i])
 //		if err != nil {
-//			log.Fatal(err)
+//			log.Panic(err)
 //		}
 //		for _, fileinfo := range subfileInfos {
 //			file, err := os.Open(dirs[i] + "/" + fileinfo.Name())
-//			FatalError(err)
+//			PanicError(err)
 //			gzfiles = append(gzfiles, file)
 //		}
 //	}
@@ -151,7 +151,7 @@ package openAlex
 //		meta := []byte(fmt.Sprintf(authorCreateMeta, target.Id, "\n"))
 //		data, err := json.Marshal(target)
 //		if err != nil {
-//			log.Fatal("marshal struct to string error: \n", err.Error())
+//			log.Panic("marshal struct to string error: \n", err.Error())
 //		}
 //		data = append(data, "\n"...)
 //		buffer.Grow(len(meta) + len(data))
@@ -160,18 +160,18 @@ package openAlex
 //	}
 //	res, err := es.Bulk(bytes.NewReader(buffer.Bytes()))
 //	if err != nil {
-//		log.Fatal("execute es.Bulk occurs error: \n", err.Error())
+//		log.Panic("execute es.Bulk occurs error: \n", err.Error())
 //	}
 //	common.HandleResponseError(res)
 //	block := CreatedBulkResponse{}
 //	if err := json.NewDecoder(res.Body).Decode(&block); err != nil {
-//		log.Fatal("parse response body error:\n", err)
+//		log.Panic("parse response body error:\n", err)
 //	} else {
 //		if block.Errors {
 //			for _, item := range block.Items {
 //				status := item.Create.Status
 //				if status != 409 && status != 201 {
-//					log.Fatal("es internal error:\n", strconv.Itoa(item.Create.Status), item.Create.Error.Type, item.Create.Error.Reason)
+//					log.Panic("es internal error:\n", strconv.Itoa(item.Create.Status), item.Create.Error.Type, item.Create.Error.Reason)
 //				}
 //			}
 //		}

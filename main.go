@@ -2,8 +2,11 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"github.com/jordan-wright/email"
 	"io"
 	"log"
+	"net/smtp"
 	"os"
 	"soft2_importer/openAlex"
 )
@@ -12,17 +15,19 @@ var totalPath = flag.String("oa", "/home/diamond/soft2/data/openalex", "the conf
 var startDir = flag.String("sd", "", "the directory to start, if empty , start from newest directory")
 
 func main() {
-	logFile, err := os.Create("log.txt")
-	openAlex.FatalError(err)
-	log.SetOutput(logFile)
-	flag.Parse()
-	log.Printf("totalpath : %s\n", *totalPath)
-	openAlex.TotalPath = *totalPath
-	openAlex.StartDir = *startDir
-	logOutput()
-	log.Println("welcome to importer")
-	openAlex.ImportScholars()
-	//ImportPapers()
+	defer SendEmail()
+	return
+	//logFile, err := os.Create("log.txt")
+	//openAlex.PanicError(err)
+	//log.SetOutput(logFile)
+	//flag.Parse()
+	//log.Printf("totalpath : %s\n", *totalPath)
+	//openAlex.TotalPath = *totalPath
+	//openAlex.StartDir = *startDir
+	//logOutput()
+	//log.Println("welcome to importer")
+	//openAlex.ImportScholars()
+	////ImportPapers()
 }
 func logOutput() func() {
 	logfile := `log.txt`
@@ -62,6 +67,18 @@ func logOutput() func() {
 		_ = f.Close()
 	}
 
+}
+func SendEmail() {
+	e := email.NewEmail()
+	e.From = fmt.Sprintf("您的程序 <1838940019@qq.com>")
+	e.To = []string{"20373389@buaa.edu.cn"}
+	//设置文件发送的内容
+	content := fmt.Sprintf(`您的程序又又又崩了， 请登陆华为云查看`)
+	e.HTML = []byte(content)
+	e.Subject = "您的程序又又又崩了"
+	//设置服务器相关的配置
+	err := e.Send("smtp.qq.com:25", smtp.PlainAuth("", "1838940019@qq.com", "gvlptmbocrkmfdgh", "smtp.qq.com"))
+	openAlex.PanicError(err)
 }
 
 //func GetOAArticles() []*types.OAArticle {

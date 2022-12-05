@@ -15,7 +15,7 @@ import (
 //
 //var ErrorRecorder errorRecorder
 //
-//func (p *errorRecorder) Fatal(when string, otherInfos ...string) {
+//func (p *errorRecorder) Panic(when string, otherInfos ...string) {
 //	err := fmt.Sprintf("Failure!\nwhen: %s\n where: %s\nindex: %d\n", when, p.NowLocation, p.NowIndex)
 //	if len(otherInfos) != 0 {
 //		err += "otherInfos:\n"
@@ -23,7 +23,7 @@ import (
 //	for _, info := range otherInfos {
 //		err += info + "\n"
 //	}
-//	log.Fatal(err)
+//	log.Panic(err)
 //}
 //
 func HandleResponseError(res *esapi.Response) {
@@ -31,9 +31,9 @@ func HandleResponseError(res *esapi.Response) {
 	if res.IsError() {
 		str := "http from ES responses error! \n"
 		if err := json.NewDecoder(res.Body).Decode(&raw); err != nil {
-			log.Fatal(str, "parse error response body error\n", err.Error())
+			log.Panic(str, "parse error response body error\n", err.Error())
 		} else {
-			log.Fatal("ES response Errors:\n",
+			log.Panic("ES response Errors:\n",
 				raw["error"].(map[string]interface{})["type"].(string), "\n",
 				raw["error"].(map[string]interface{})["reason"].(string),
 			)
