@@ -16,18 +16,17 @@ var startDir = flag.String("sd", "", "the directory to start, if empty , start f
 
 func main() {
 	defer SendEmail()
-	return
-	//logFile, err := os.Create("log.txt")
-	//openAlex.PanicError(err)
-	//log.SetOutput(logFile)
-	//flag.Parse()
-	//log.Printf("totalpath : %s\n", *totalPath)
-	//openAlex.TotalPath = *totalPath
-	//openAlex.StartDir = *startDir
-	//logOutput()
-	//log.Println("welcome to importer")
-	//openAlex.ImportScholars()
-	////ImportPapers()
+	logFile, err := os.Create("log.txt")
+	openAlex.PanicError(err)
+	log.SetOutput(logFile)
+	flag.Parse()
+	log.Printf("totalpath : %s\n", *totalPath)
+	openAlex.TotalPath = *totalPath
+	openAlex.StartDir = *startDir
+	logOutput()
+	log.Println("welcome to importer")
+	openAlex.ImportScholars()
+	//ImportPapers()
 }
 func logOutput() func() {
 	logfile := `log.txt`
