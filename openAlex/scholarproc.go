@@ -49,7 +49,8 @@ func init() {
 			"http://127.0.0.1:9200",
 		},
 	}
-	es, err := elasticsearch.NewClient(cfg)
+	var err error
+	es, err = elasticsearch.NewClient(cfg)
 	PanicError(err)
 	log.Println(es.Info())
 }
