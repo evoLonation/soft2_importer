@@ -62,7 +62,7 @@ var loadTime int64
 var oneBulkNum int = 1024
 var lineLength int = 1 << 18 // 256k
 var totalNum int64
-var logInterval int64 = 10000
+var logInterval int64 = 100000
 
 func getOriginScholars(scanner *bufio.Scanner) []*OAScholar {
 	//fmt.Printf("load OAScholar structs......\n")
