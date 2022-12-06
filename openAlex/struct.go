@@ -69,7 +69,7 @@ func (p *OAArticle) Parse() *types.Paper {
 		References: getIds(p.ReferencedWorks),
 		Relateds:   getIds(p.RelatedWorks),
 		Authors:    p.getAuthors(),
-		Doi:        p.Doi,
+		Doi:        p.getDoi(),
 		Keywords:   p.getKeywords(),
 		NCitation:  p.CitedByCount,
 		Url:        p.getUrls(),
@@ -90,6 +90,7 @@ func (p *OAArticle) getAbstract() string {
 	abstractMp := p.AbstractInvertedIndex
 	l := 512
 	buf := make([]string, l)
+	maxIndex := 0
 	for word, indexs := range abstractMp {
 		for _, index := range indexs {
 			if index >= l {
@@ -99,9 +100,12 @@ func (p *OAArticle) getAbstract() string {
 				buf = newbuf
 			}
 			buf[index] = word
+			if index > maxIndex {
+				maxIndex = index
+			}
 		}
 	}
-	return strings.Join(buf, " ")
+	return strings.Join(buf[:maxIndex+1], " ")
 }
 
 func (p *OAArticle) getAuthors() []struct {
@@ -156,6 +160,11 @@ func (p *OAArticle) getDocType() string {
 	return targetTypes[0]
 }
 
+func (p *OAArticle) getDoi() string {
+	_, after, _ := strings.Cut(p.Doi, "https://doi.org/")
+	return after
+}
+
 func getId(OAid string) string {
 	_, ret, _ := strings.Cut(OAid, "https://openalex.org/")
 	return "OA:" + ret
@@ -176,9 +185,9 @@ func (p *OAScholar) Parse() *types.Scholar {
 		NPubs:      p.WorksCount,
 		Name:       p.DisplayName,
 		Statistics: p.getStatistics(),
-		Orgs:       []string{p.LastKnownInstitution.DisplayName},
-		Position:   "",
-		//todo or nil?
+		//todo 可能出现数组种的空字符串
+		Orgs:     []string{p.LastKnownInstitution.DisplayName},
+		Position: "",
 		Pubs: []struct {
 			Id    string `json:"i"`
 			Order int64  `json:"r"`

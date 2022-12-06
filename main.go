@@ -1,19 +1,21 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/jordan-wright/email"
-	"io"
 	"log"
 	"net/smtp"
 	"os"
 	"soft2_importer/openAlex"
 )
 
-var totalPath = flag.String("oa", "/home/diamond/soft2/data/openalex", "the config file")
+var rootPath = flag.String("oa", "data/openAlex/works", "the config file")
+var importType = flag.String("type", "papers", "the import type, could be authors or papers")
 var startDir = flag.String("sd", "", "the directory to start, if empty , start from newest directory")
-var logDetail = flag.Bool("ld", false, "whether or not log detail")
+var startFile = flag.String("sf", "", "the file to start, if empty , start from first file in directory")
+var logDetail = flag.Bool("ld", true, "whether or not log detail")
 var sendEmail = flag.Bool("se", false, "whether or not send email when error")
 
 func main() {
@@ -26,54 +28,23 @@ func main() {
 	logFile, err := os.Create("log.txt")
 	openAlex.PanicError(err)
 	log.SetOutput(logFile)
-	log.Printf("totalpath : %s\n", *totalPath)
-	openAlex.TotalPath = *totalPath
+	log.Printf("totalpath : %s\n", *rootPath)
+	log.Printf("startFile : %s\n", *startFile)
+	openAlex.TotalPath = *rootPath
 	openAlex.StartDir = *startDir
 	openAlex.LogDetail = *logDetail
-	logOutput()
 	log.Println("welcome to importer")
-	openAlex.ImportScholars()
-	//ImportPapers()
-}
-func logOutput() func() {
-	logfile := `log.txt`
-	// open file read/write | create if not exist | clear file at open if exists
-	f, _ := os.OpenFile(logfile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-
-	// save existing stdout | MultiWriter writes to saved stdout and file
-	out := os.Stdout
-	mw := io.MultiWriter(out, f)
-
-	// get pipe reader and writer | writes to pipe writer come out pipe reader
-	r, w, _ := os.Pipe()
-
-	// replace stdout,stderr with pipe writer | all writes to stdout, stderr will go through pipe instead (fmt.print, log)
-	os.Stdout = w
-	os.Stderr = w
-
-	// writes with log.Print should also write to mw
-	log.SetOutput(mw)
-
-	//create channel to control exit | will block until all copies are finished
-	exit := make(chan bool)
-
-	go func() {
-		// copy all reads from pipe to multiwriter, which writes to stdout and file
-		_, _ = io.Copy(mw, r)
-		// when r or w is closed copy will finish and true will be sent to channel
-		exit <- true
-	}()
-
-	// function to be deferred in main until program exits
-	return func() {
-		// close writer then block on exit channel | this will let mw finish writing before the program exits
-		_ = w.Close()
-		<-exit
-		// close file after all writes have finished
-		_ = f.Close()
+	if *importType == "authors" {
+		openAlex.ImportScholars()
+	} else if *importType == "papers" {
+		log.Println("start to import papers")
+		openAlex.GetPaperImporterContext(*rootPath, *startDir, *startFile, *logDetail).Import()
+	} else {
+		log.Println("start to import authors")
+		openAlex.PanicError(errors.New("type argument is not authors or paper neither"))
 	}
-
 }
+
 func SendEmail() {
 	log.Printf("send email to 20373389@buaa.edu.cn\n")
 	e := email.NewEmail()

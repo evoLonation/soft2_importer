@@ -6,26 +6,6 @@ import (
 	"log"
 )
 
-//type errorRecorder struct {
-//	NowIndex    int64
-//	NowLocation string
-//	StartId     string
-//	EndId       string
-//}
-//
-//var ErrorRecorder errorRecorder
-//
-//func (p *errorRecorder) Panic(when string, otherInfos ...string) {
-//	err := fmt.Sprintf("Failure!\nwhen: %s\n where: %s\nindex: %d\n", when, p.NowLocation, p.NowIndex)
-//	if len(otherInfos) != 0 {
-//		err += "otherInfos:\n"
-//	}
-//	for _, info := range otherInfos {
-//		err += info + "\n"
-//	}
-//	log.Panic(err)
-//}
-//
 func HandleResponseError(res *esapi.Response) {
 	raw := map[string]interface{}{}
 	if res.IsError() {

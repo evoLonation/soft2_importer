@@ -29,13 +29,13 @@ func MultiFileReaderFactory(gzfiles []string) *multiFileReader {
 }
 func gunzip(file string) string {
 	if !strings.HasSuffix(file, ".gz") {
-		log.Panic("该文件不是.gz文件 : %s", file)
+		log.Panicf("该文件不是.gz文件 : %s", file)
 	}
 	log.Printf("gunzip file %s...", file)
 	cmd := exec.Command("/bin/bash", "-c", `gunzip -k -f `+file)
 	output, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Panic("无法获取ungzip的标准输出管道", err.Error())
+		log.Panic("无法获取 ungzip 的标准输出管道", err.Error())
 	}
 	if err := cmd.Start(); err != nil {
 		log.Panic("gunzip命令执行失败，请检查命令输入是否有误", err.Error())
@@ -44,7 +44,7 @@ func gunzip(file string) string {
 	PanicError(err)
 	PanicError(cmd.Wait())
 	log.Printf("unzip done\n")
-	log.Printf("命令输出：\n%s\n", string(bytes))
+	log.Printf("gunzip command output :%s\n", string(bytes))
 	before, _, _ := strings.Cut(file, ".gz")
 	return before
 }
@@ -70,12 +70,10 @@ func (p *multiFileReader) Read(buf []byte) (int, error) {
 		if totaln == len(buf) {
 			break
 		} else if totaln > len(buf) {
-			log.Panic("totaln should not greater than %s\n", len(buf))
+			log.Panicf("totaln should not greater than %d\n", len(buf))
 		} else if totaln < len(buf) {
 			log.Printf("the file %s are read done\n", p.currentJsonlFile.Name())
 			err := p.currentJsonlFile.Close()
-			PanicError(err)
-			err = os.Remove(p.currentJsonlFile.Name())
 			PanicError(err)
 			p.currentIndex++
 			if p.currentIndex >= len(p.gzfiles) {

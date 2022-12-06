@@ -20,13 +20,10 @@ import (
 var authorCreateMeta = `{ "create" : { "_index" : "authors", "_id" : "%s"} }%s`
 
 type itemResponse struct {
-	ID     string `json:"_id"`
-	Result string `json:"result"`
-	Status int    `json:"status"`
-	Error  struct {
-		Type   string `json:"type"`
-		Reason string `json:"reason"`
-	} `json:"error"`
+	ID     string                 `json:"_id"`
+	Result string                 `json:"result"`
+	Status int                    `json:"status"`
+	Error  map[string]interface{} `json:"error"`
 }
 
 type CreatedBulkResponse struct {
@@ -100,6 +97,7 @@ func PanicError(err error) {
 		panic(err)
 	}
 }
+
 func createScanner() *bufio.Scanner {
 	log.Printf("load file to create scanner\n")
 	defer log.Printf("create scanner done\n")
@@ -214,7 +212,11 @@ func importScholarToES(targets []*types.Scholar) {
 			for _, item := range block.Items {
 				status := item.Create.Status
 				if status != 409 && status != 201 {
-					log.Panic("es internal error:\n", strconv.Itoa(item.Create.Status), item.Create.Error.Type, item.Create.Error.Reason)
+					errBytes, err := json.Marshal(item.Create.Error)
+					if err != nil {
+						log.Panicf("error when marshal es response error : %s\n", err)
+					}
+					log.Panic("es internal error:\n", strconv.Itoa(item.Create.Status), string(errBytes))
 				}
 			}
 		}
