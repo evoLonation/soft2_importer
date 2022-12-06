@@ -47,7 +47,7 @@ type ImporterContext[SS any, SP Parseable[TP], TP ValidationAble] struct {
 	startOffset     int
 	directoryPrefix string
 	oneBulkNum      int
-	lineLength      int // 256k
+	lineLength      int
 	logInterval     int
 	logDetail       bool
 	sourceTypeName  string
@@ -62,9 +62,9 @@ type PaperImporterContext struct {
 	*ImporterContext[OAArticle, *OAArticle, *types.Paper]
 }
 
-func GetPaperImporterContext(rootPath string, startDir string, startFile string, fileOffset int, logDetail bool) *PaperImporterContext {
+func GetPaperImporterContext(rootPath string, startDir string, startFile string, fileOffset int, oneBulkNum int, logDetail bool) *PaperImporterContext {
 	return &PaperImporterContext{
-		ImporterContext: getImporterContext[OAArticle, *OAArticle, *types.Paper](rootPath, startDir, startFile, fileOffset, logDetail, importPaperToES),
+		ImporterContext: getImporterContext[OAArticle, *OAArticle, *types.Paper](rootPath, startDir, startFile, fileOffset, oneBulkNum, logDetail, importPaperToES),
 	}
 }
 func getImporterContext[SS any, SP Parseable[TP], TP ValidationAble](
@@ -72,6 +72,7 @@ func getImporterContext[SS any, SP Parseable[TP], TP ValidationAble](
 	startDir string,
 	startFile string,
 	startOffset int,
+	oneBulkNum int,
 	logDetail bool,
 	importFunc func(target []TP, logDetail bool) int,
 ) *ImporterContext[SS, SP, TP] {
@@ -86,7 +87,7 @@ func getImporterContext[SS any, SP Parseable[TP], TP ValidationAble](
 		startFile:       startFile,
 		startOffset:     startOffset,
 		directoryPrefix: "updated_date=",
-		oneBulkNum:      128,
+		oneBulkNum:      oneBulkNum,
 		lineLength:      1 << 22, // 4M
 		logInterval:     5000,
 		logDetail:       logDetail,

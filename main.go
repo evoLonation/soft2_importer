@@ -19,6 +19,7 @@ var logDetail = flag.Bool("ld", true, "whether or not log detail")
 var sendEmail = flag.Bool("se", false, "whether or not send email when error")
 var startOffset = flag.Int("so", 0, "start offset of the start file")
 var logFile = flag.String("lf", "log.txt", "log file name")
+var bulkNum = flag.Int("bn", 64, "one bulk paper num")
 
 func main() {
 	flag.Parse()
@@ -32,6 +33,7 @@ func main() {
 	log.SetOutput(logFile)
 	log.Printf("totalpath : %s\n", *rootPath)
 	log.Printf("startFile : %s\n", *startFile)
+	log.Printf("bulkNum : %d\n", *bulkNum)
 	openAlex.TotalPath = *rootPath
 	openAlex.StartDir = *startDir
 	openAlex.LogDetail = *logDetail
@@ -40,7 +42,7 @@ func main() {
 		openAlex.ImportScholars()
 	} else if *importType == "papers" {
 		log.Println("start to import papers")
-		openAlex.GetPaperImporterContext(*rootPath, *startDir, *startFile, *startOffset, *logDetail).Import()
+		openAlex.GetPaperImporterContext(*rootPath, *startDir, *startFile, *startOffset, *bulkNum, *logDetail).Import()
 	} else {
 		log.Println("start to import authors")
 		openAlex.PanicError(errors.New("type argument is not authors or paper neither"))
