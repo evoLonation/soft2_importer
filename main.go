@@ -47,9 +47,9 @@ func main() {
 }
 
 func SendEmail() {
-	log.Printf("send email to 20373389@buaa.edu.cn\n")
+	log.Printf("send email to 1838940019@qq.com\n")
 	e := email.NewEmail()
-	e.From = fmt.Sprintf("您的导入程序")
+	e.From = fmt.Sprintf("您的导入程序 <1838940019@qq.com>")
 	//e.To = []string{"20373389@buaa.edu.cn"}
 	e.To = []string{"1838940019@qq.com"}
 	//设置文件发送的内容
@@ -57,8 +57,8 @@ func SendEmail() {
 	e.HTML = []byte(content)
 	e.Subject = "您的程序又又又崩了"
 	//设置服务器相关的配置
-	err := e.Send("smtp.qq.com:25", smtp.PlainAuth("", "413935740@qq.com", "ukdwwhkaegvpcbch", "smtp.qq.com"))
-	//err := e.Send("smtp.qq.com:25", smtp.PlainAuth("", "1838940019@qq.com", "gvlptmbocrkmfdgh", "smtp.qq.com"))
+	//err := e.Send("smtp.qq.com:25", smtp.PlainAuth("", "413935740@qq.com", "ukdwwhkaegvpcbch", "smtp.qq.com"))
+	err := e.Send("smtp.qq.com:25", smtp.PlainAuth("", "1838940019@qq.com", "gvlptmbocrkmfdgh", "smtp.qq.com"))
 	openAlex.PanicError(err)
 }
 
