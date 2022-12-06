@@ -17,7 +17,7 @@ var startDir = flag.String("sd", "", "the directory to start, if empty , start f
 var startFile = flag.String("sf", "", "the file to start, if empty , start from first file in directory")
 var logDetail = flag.Bool("ld", true, "whether or not log detail")
 var sendEmail = flag.Bool("se", false, "whether or not send email when error")
-var fileOffset = flag.Int("fo", 0, "start offset of the start file")
+var startOffset = flag.Int("so", 0, "start offset of the start file")
 
 func main() {
 	flag.Parse()
@@ -39,7 +39,7 @@ func main() {
 		openAlex.ImportScholars()
 	} else if *importType == "papers" {
 		log.Println("start to import papers")
-		openAlex.GetPaperImporterContext(*rootPath, *startDir, *startFile, *fileOffset, *logDetail).Import()
+		openAlex.GetPaperImporterContext(*rootPath, *startDir, *startFile, *startOffset, *logDetail).Import()
 	} else {
 		log.Println("start to import authors")
 		openAlex.PanicError(errors.New("type argument is not authors or paper neither"))
