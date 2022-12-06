@@ -14,6 +14,8 @@ type multiFileReader struct {
 	currentJsonlFile *os.File
 }
 
+var isZip bool = true
+
 func MultiFileReaderFactory(gzfiles []string) *multiFileReader {
 	log.Printf("build a multi gz file reader, gz files : \n")
 	for _, file := range gzfiles {
@@ -28,6 +30,9 @@ func MultiFileReaderFactory(gzfiles []string) *multiFileReader {
 	}
 }
 func gunzip(file string) string {
+	if !isZip {
+		return file
+	}
 	if !strings.HasSuffix(file, ".gz") {
 		log.Panicf("该文件不是.gz文件 : %s", file)
 	}
@@ -75,6 +80,10 @@ func (p *multiFileReader) Read(buf []byte) (int, error) {
 			log.Printf("the file %s are read done\n", p.currentJsonlFile.Name())
 			err := p.currentJsonlFile.Close()
 			PanicError(err)
+			if isZip {
+				err = os.Remove(p.currentJsonlFile.Name())
+				PanicError(err)
+			}
 			p.currentIndex++
 			if p.currentIndex >= len(p.gzfiles) {
 				log.Printf("all file are read done\n")

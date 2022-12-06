@@ -93,7 +93,7 @@ func (p *OAArticle) getAbstract() string {
 	maxIndex := 0
 	for word, indexs := range abstractMp {
 		for _, index := range indexs {
-			if index >= l {
+			for index >= l {
 				l = l * 2
 				newbuf := make([]string, l)
 				copy(newbuf, buf)
