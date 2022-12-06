@@ -82,7 +82,7 @@ func getImporterContext[SS any, SP Parseable[TP], TP ValidationAble](
 		startFile:       startFile,
 		directoryPrefix: "updated_date=",
 		oneBulkNum:      128,
-		lineLength:      1 << 18, // 256k
+		lineLength:      1 << 21, // 2M
 		logInterval:     100000,
 		logDetail:       logDetail,
 		sourceTypeName:  reflect.TypeOf(new(SP)).Name(),
