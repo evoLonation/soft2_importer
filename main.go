@@ -18,6 +18,7 @@ var startFile = flag.String("sf", "", "the file to start, if empty , start from 
 var logDetail = flag.Bool("ld", true, "whether or not log detail")
 var sendEmail = flag.Bool("se", false, "whether or not send email when error")
 var startOffset = flag.Int("so", 0, "start offset of the start file")
+var logFile = flag.String("lf", "log.txt", "log file name")
 
 func main() {
 	flag.Parse()
@@ -26,7 +27,7 @@ func main() {
 			SendEmail()
 		}
 	}()
-	logFile, err := os.Create("log.txt")
+	logFile, err := os.Create(*logFile)
 	openAlex.PanicError(err)
 	log.SetOutput(logFile)
 	log.Printf("totalpath : %s\n", *rootPath)
