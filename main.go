@@ -17,6 +17,7 @@ var startDir = flag.String("sd", "", "the directory to start, if empty , start f
 var startFile = flag.String("sf", "", "the file to start, if empty , start from first file in directory")
 var logDetail = flag.Bool("ld", true, "whether or not log detail")
 var sendEmail = flag.Bool("se", false, "whether or not send email when error")
+var fileOffset = flag.Int("fo", 0, "start offset of the start file")
 
 func main() {
 	flag.Parse()
@@ -38,7 +39,7 @@ func main() {
 		openAlex.ImportScholars()
 	} else if *importType == "papers" {
 		log.Println("start to import papers")
-		openAlex.GetPaperImporterContext(*rootPath, *startDir, *startFile, *logDetail).Import()
+		openAlex.GetPaperImporterContext(*rootPath, *startDir, *startFile, *fileOffset, *logDetail).Import()
 	} else {
 		log.Println("start to import authors")
 		openAlex.PanicError(errors.New("type argument is not authors or paper neither"))
@@ -48,14 +49,16 @@ func main() {
 func SendEmail() {
 	log.Printf("send email to 20373389@buaa.edu.cn\n")
 	e := email.NewEmail()
-	e.From = fmt.Sprintf("您的程序 <1838940019@qq.com>")
-	e.To = []string{"20373389@buaa.edu.cn"}
+	e.From = fmt.Sprintf("您的导入程序")
+	//e.To = []string{"20373389@buaa.edu.cn"}
+	e.To = []string{"1838940019@qq.com"}
 	//设置文件发送的内容
 	content := fmt.Sprintf(`您的程序又又又崩了， 请登陆华为云查看`)
 	e.HTML = []byte(content)
 	e.Subject = "您的程序又又又崩了"
 	//设置服务器相关的配置
-	err := e.Send("smtp.qq.com:25", smtp.PlainAuth("", "1838940019@qq.com", "gvlptmbocrkmfdgh", "smtp.qq.com"))
+	err := e.Send("smtp.qq.com:25", smtp.PlainAuth("", "413935740@qq.com", "ukdwwhkaegvpcbch", "smtp.qq.com"))
+	//err := e.Send("smtp.qq.com:25", smtp.PlainAuth("", "1838940019@qq.com", "gvlptmbocrkmfdgh", "smtp.qq.com"))
 	openAlex.PanicError(err)
 }
 

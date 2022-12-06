@@ -43,6 +43,7 @@ type ImporterContext[SS any, SP Parseable[TP], TP ValidationAble] struct {
 	rootPath        string
 	startDir        string
 	startFile       string
+	startOffset     int
 	directoryPrefix string
 	oneBulkNum      int
 	lineLength      int // 256k
@@ -53,21 +54,23 @@ type ImporterContext[SS any, SP Parseable[TP], TP ValidationAble] struct {
 	target          string
 	createdNum      int
 	importToES      func(target []TP, logDetail bool) int
+	fileReader      *multiFileReader
 }
 
 type PaperImporterContext struct {
 	*ImporterContext[OAArticle, *OAArticle, *types.Paper]
 }
 
-func GetPaperImporterContext(rootPath string, startDir string, startFile string, logDetail bool) *PaperImporterContext {
+func GetPaperImporterContext(rootPath string, startDir string, startFile string, fileOffset int, logDetail bool) *PaperImporterContext {
 	return &PaperImporterContext{
-		ImporterContext: getImporterContext[OAArticle, *OAArticle, *types.Paper](rootPath, startDir, startFile, logDetail, importPaperToES),
+		ImporterContext: getImporterContext[OAArticle, *OAArticle, *types.Paper](rootPath, startDir, startFile, fileOffset, logDetail, importPaperToES),
 	}
 }
 func getImporterContext[SS any, SP Parseable[TP], TP ValidationAble](
 	rootPath string,
 	startDir string,
 	startFile string,
+	startOffset int,
 	logDetail bool,
 	importFunc func(target []TP, logDetail bool) int,
 ) *ImporterContext[SS, SP, TP] {
@@ -80,9 +83,10 @@ func getImporterContext[SS any, SP Parseable[TP], TP ValidationAble](
 		rootPath:        rootPath,
 		startDir:        startDir,
 		startFile:       startFile,
+		startOffset:     startOffset,
 		directoryPrefix: "updated_date=",
 		oneBulkNum:      128,
-		lineLength:      1 << 21, // 2M
+		lineLength:      1 << 22, // 4M
 		logInterval:     5000,
 		logDetail:       logDetail,
 		sourceTypeName:  reflect.TypeOf(new(SP)).Name(),
@@ -185,8 +189,17 @@ func (p *ImporterContext[SS, SP, TP]) createScanner() *bufio.Scanner {
 	log.Printf("start from file %s\n", files[0])
 	reader := MultiFileReaderFactory(files)
 	scanner := bufio.NewScanner(reader)
+	p.fileReader = reader
 	buf := make([]byte, p.lineLength)
 	scanner.Buffer(buf, p.lineLength)
+	// pass to startoffset
+	if p.startOffset > 0 {
+		log.Printf("pass this file to %d...\n", p.startOffset)
+		for p.fileReader.currentOffset < p.startOffset-p.lineLength {
+			scanner.Scan()
+		}
+		log.Printf("pass done, currentOffset: %d\n", p.fileReader.currentOffset)
+	}
 	return scanner
 }
 
@@ -197,7 +210,12 @@ func (p *ImporterContext[SS, SP, TP]) Import() {
 	totalCreatedNum := 0
 	log.Printf("start to import %s to es! start time : %s\n", p.target, start)
 	defer func() {
-		log.Printf("quit import, \ntotal number is %d\nactual create paper number is %d\ntime: from %s to %s, duration %s", totalNum, totalCreatedNum, start, time.Now(), time.Since(start))
+		log.Printf("quit import, \ntotal number is %d\nactual create document number is %d\ntime: from %s to %s, duration %s\n", totalNum, totalCreatedNum, start, time.Now(), time.Since(start))
+		if p.fileReader.IsAllDone() {
+			log.Printf("conguratulations! all papers are import to your database!\n")
+		} else {
+			log.Printf("stop in file %s, offset %d, it is recommended to start from %d next time\n", p.fileReader.GetCurrentFile(), p.fileReader.GetCurrentFileOffset(), p.fileReader.GetCurrentFileOffset()-2*p.lineLength-1)
+		}
 	}()
 	scanner := p.createScanner()
 	nextLogNum := p.logInterval
