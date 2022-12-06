@@ -41,6 +41,10 @@ type CreatedBulkResponse struct {
 var es *elasticsearch.Client
 
 func init() {
+	GetNewClient()
+}
+
+func GetNewClient() {
 	cfg := elasticsearch.Config{
 		Addresses: []string{
 			"http://127.0.0.1:9200",

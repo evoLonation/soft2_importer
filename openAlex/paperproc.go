@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"io/ioutil"
 	"log"
 	"os"
@@ -313,10 +314,22 @@ func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 		}
 	}
 	//log.Printf("execute body: \n%s", string(buffer.Bytes()))
-	res, err := es.Bulk(bytes.NewReader(buffer.Bytes()))
-	if err != nil {
-		log.Panic("execute es.Bulk occurs error: \n", err.Error())
+	tryTime := 0
+	var res *esapi.Response
+	var err error
+	for {
+		res, err = es.Bulk(bytes.NewReader(buffer.Bytes()))
+		if err == nil {
+			break
+		} else if tryTime < 10 {
+			tryTime++
+			log.Printf("execute es.Bulk occurs error: %s\n", err.Error())
+			time.Sleep(5 * time.Second)
+			log.Printf("try to reconnect :%d\n", tryTime)
+			GetNewClient()
+		}
 	}
+
 	common.HandleResponseError(res)
 	block := UpdateBulkResponse{}
 	if err := json.NewDecoder(res.Body).Decode(&block); err != nil {
