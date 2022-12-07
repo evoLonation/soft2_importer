@@ -367,7 +367,7 @@ func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 	for {
 		res, err = es.Bulk(bytes.NewReader(buffer.Bytes()))
 		if tryTime >= 10 {
-			break
+			log.Panicf("try %d times fail\n", tryTime)
 		} else if err != nil {
 			log.Printf("execute es.Bulk occurs error: %s\n", err.Error())
 			time.Sleep(5 * time.Second)
