@@ -260,10 +260,17 @@ func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 	}
 	//对于每个targets，先判断是否有效，有效就创建
 	buffer := bytes.Buffer{}
+	validationNum := 0
 	for _, target := range targets {
 		if !target.CheckValidation() {
+			if logDetail {
+				unvalidationBytes, err := json.Marshal(target)
+				PanicError(err)
+				log.Printf("target unvalidation! struct content:\n%s", string(unvalidationBytes))
+			}
 			continue
 		}
+		validationNum++
 		paperMeta := []byte(fmt.Sprintf(paperCreateMeta, target.Id))
 		paperData, err := json.Marshal(target)
 		if err != nil {
@@ -318,6 +325,12 @@ func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 			buffer.Write(authorDatas[i])
 		}
 	}
+	if buffer.String() == "" {
+		if logDetail {
+			log.Printf("all targets unvalidation, do not send request\n")
+			return 0
+		}
+	}
 	if logDetail {
 		log.Printf("execute body: \n%s", string(buffer.Bytes()))
 	}
@@ -368,7 +381,7 @@ func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 
 			}
 		} else {
-			createdNum += len(targets)
+			createdNum += validationNum
 		}
 	}
 	if logDetail {
