@@ -101,14 +101,15 @@ func (p *ImporterContext[SS, SP, TP]) getSourceStructs(scanner *bufio.Scanner) [
 	if p.logDetail {
 		log.Printf("load %s structs......\n", p.sourceTypeName)
 	}
-	defer func() {
-		if p.logDetail {
-			log.Printf("load %s structs done\n", p.sourceTypeName)
-		}
-	}()
+
 	origins := make([]SP, p.oneBulkNum)
 	//读取一行
 	i := 0
+	defer func() {
+		if p.logDetail {
+			log.Printf("load %s structs done, %d elements\n", p.sourceTypeName, i)
+		}
+	}()
 	for scanner.Scan() {
 		line := scanner.Bytes()
 		origin := new(SS)
