@@ -328,8 +328,8 @@ func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 	if buffer.String() == "" {
 		if logDetail {
 			log.Printf("all targets unvalidation, do not send request\n")
-			return 0
 		}
+		return 0
 	}
 	if logDetail {
 		log.Printf("execute body: \n%s", string(buffer.Bytes()))
