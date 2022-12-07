@@ -17,7 +17,7 @@ var startDir = flag.String("sd", "", "the directory to start, if empty , start f
 var startFile = flag.String("sf", "", "the file to start, if empty , start from first file in directory")
 var logDetail = flag.Bool("ld", true, "whether or not log detail")
 var sendEmail = flag.Bool("se", false, "whether or not send email when error")
-var startOffset = flag.Int("so", 0, "start offset of the start file")
+var startOffset = flag.Int64("so", 0, "start offset of the start file")
 var logFile = flag.String("lf", "log.txt", "log file name")
 var bulkNum = flag.Int("bn", 64, "one bulk paper num")
 

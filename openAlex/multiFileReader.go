@@ -12,7 +12,7 @@ type multiFileReader struct {
 	currentIndex     int
 	gzfiles          []string
 	currentJsonlFile *os.File
-	currentOffset    int
+	currentOffset    int64
 }
 
 var isZip bool = true
@@ -54,7 +54,7 @@ func gunzip(file string) string {
 	before, _, _ := strings.Cut(file, ".gz")
 	return before
 }
-func (p *multiFileReader) GetCurrentFileOffset() int {
+func (p *multiFileReader) GetCurrentFileOffset() int64 {
 	return p.currentOffset
 }
 func (p *multiFileReader) GetCurrentFile() string {
@@ -85,7 +85,7 @@ func (p *multiFileReader) Read(buf []byte) (int, error) {
 		}
 		//fmt.Printf("read %d bytes into [%d-%d) from file %s\n", tmp, totaln, totaln+tmp, p.currentJsonlFile.Name())
 		totaln += tmp
-		p.currentOffset += tmp
+		p.currentOffset += int64(tmp)
 		if totaln == len(buf) {
 			break
 		} else if totaln > len(buf) {

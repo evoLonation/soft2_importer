@@ -44,7 +44,7 @@ type ImporterContext[SS any, SP Parseable[TP], TP ValidationAble] struct {
 	rootPath        string
 	startDir        string
 	startFile       string
-	startOffset     int
+	startOffset     int64
 	directoryPrefix string
 	oneBulkNum      int
 	lineLength      int
@@ -62,7 +62,7 @@ type PaperImporterContext struct {
 	*ImporterContext[OAArticle, *OAArticle, *types.Paper]
 }
 
-func GetPaperImporterContext(rootPath string, startDir string, startFile string, fileOffset int, oneBulkNum int, logDetail bool) *PaperImporterContext {
+func GetPaperImporterContext(rootPath string, startDir string, startFile string, fileOffset int64, oneBulkNum int, logDetail bool) *PaperImporterContext {
 	return &PaperImporterContext{
 		ImporterContext: getImporterContext[OAArticle, *OAArticle, *types.Paper](rootPath, startDir, startFile, fileOffset, oneBulkNum, logDetail, importPaperToES),
 	}
@@ -71,7 +71,7 @@ func getImporterContext[SS any, SP Parseable[TP], TP ValidationAble](
 	rootPath string,
 	startDir string,
 	startFile string,
-	startOffset int,
+	startOffset int64,
 	oneBulkNum int,
 	logDetail bool,
 	importFunc func(target []TP, logDetail bool) int,
@@ -197,7 +197,7 @@ func (p *ImporterContext[SS, SP, TP]) createScanner() *bufio.Scanner {
 	// pass to startoffset
 	if p.startOffset > 0 {
 		log.Printf("pass this file to %d...\n", p.startOffset)
-		for p.fileReader.currentOffset < p.startOffset-p.lineLength {
+		for p.fileReader.currentOffset < p.startOffset-int64(p.lineLength) {
 			scanner.Scan()
 		}
 		log.Printf("pass done, currentOffset: %d\n", p.fileReader.currentOffset)
@@ -216,7 +216,7 @@ func (p *ImporterContext[SS, SP, TP]) Import() {
 		if p.fileReader.IsAllDone() {
 			log.Printf("conguratulations! all papers are import to your database!\n")
 		} else {
-			log.Printf("stop in file %s, offset %d, it is recommended to start from %d next time\n", p.fileReader.GetCurrentFile(), p.fileReader.GetCurrentFileOffset(), p.fileReader.GetCurrentFileOffset()-2*p.lineLength-1)
+			log.Printf("stop in file %s, offset %d, it is recommended to start from %d next time\n", p.fileReader.GetCurrentFile(), p.fileReader.GetCurrentFileOffset(), p.fileReader.GetCurrentFileOffset()-1*int64(p.lineLength)-1)
 		}
 	}()
 	scanner := p.createScanner()
@@ -253,6 +253,9 @@ var authorPubUpdateQuery = "{ \"scripted_upsert\": true, \"script\": { \"source\
 func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 	if logDetail {
 		log.Printf("send update paper bulk request to ES...\n")
+	}
+	if len(targets) == 0 {
+		log.Printf("targets length = 0, why? anyway i dont send request")
 	}
 	//对于每个targets，先判断是否有效，有效就创建
 	buffer := bytes.Buffer{}
@@ -314,7 +317,9 @@ func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 			buffer.Write(authorDatas[i])
 		}
 	}
-	//log.Printf("execute body: \n%s", string(buffer.Bytes()))
+	if logDetail {
+		log.Printf("execute body: \n%s", string(buffer.Bytes()))
+	}
 	tryTime := 0
 	var res *esapi.Response
 	var err error
