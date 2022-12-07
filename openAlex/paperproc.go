@@ -225,8 +225,8 @@ func (p *ImporterContext[SS, SP, TP]) Import() {
 	nextLogNum := p.logInterval
 	lastRestart := time.Now()
 	for {
-		if time.Since(lastRestart).Hours() >= 3 {
-			log.Printf("already pass %f minutes\n", time.Since(lastRestart).Minutes())
+		if time.Since(lastRestart).Hours() >= 12 {
+			log.Printf("already pass 12 hours util last restart\n")
 			restartContainer()
 			lastRestart = time.Now()
 		}
@@ -274,7 +274,7 @@ func restartContainer() {
 	log.Printf("restart done\n")
 	log.Printf("docker restart command output :%s\n", string(cmdOutputStr))
 	log.Printf("wait 120 second to prepare elasticsearch\n")
-	time.Sleep(120 * time.Second)
+	time.Sleep(5 * time.Minute)
 	GetNewClient()
 }
 
