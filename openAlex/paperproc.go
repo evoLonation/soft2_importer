@@ -361,11 +361,15 @@ func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 	if logDetail {
 		log.Printf("execute body: \n%s", string(buffer.Bytes()))
 	}
+	beforeString := string(buffer.Bytes())
+	beforeString = strings.ReplaceAll(beforeString, "\\u0000", "")
+	beforeString = strings.ReplaceAll(beforeString, "\\u001f", "")
+	beforeString = strings.ReplaceAll(beforeString, "\\u001e", "")
 	tryTime := 0
 	var res *esapi.Response
 	var err error
 	for {
-		res, err = es.Bulk(bytes.NewReader(buffer.Bytes()))
+		res, err = es.Bulk(bytes.NewReader([]byte(beforeString)))
 		if tryTime >= 10 {
 			log.Panicf("try %d times fail\n", tryTime)
 		} else if err != nil {
