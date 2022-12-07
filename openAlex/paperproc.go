@@ -273,8 +273,8 @@ func restartContainer() {
 	PanicError(cmd.Wait())
 	log.Printf("restart done\n")
 	log.Printf("docker restart command output :%s\n", string(cmdOutputStr))
-	log.Printf("wait 60 second to prepare elasticsearch\n")
-	time.Sleep(60 * time.Second)
+	log.Printf("wait 120 second to prepare elasticsearch\n")
+	time.Sleep(120 * time.Second)
 	GetNewClient()
 }
 
