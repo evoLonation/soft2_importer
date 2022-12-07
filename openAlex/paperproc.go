@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"reflect"
 	"soft2_importer/common"
 	"soft2_importer/types"
@@ -222,7 +223,13 @@ func (p *ImporterContext[SS, SP, TP]) Import() {
 	}()
 	scanner := p.createScanner()
 	nextLogNum := p.logInterval
+	lastRestart := time.Now()
 	for {
+		if time.Since(lastRestart).Seconds() >= 60 {
+			log.Printf("already pass %d\n", time.Since(lastRestart))
+			restartContainer()
+			lastRestart = time.Now()
+		}
 		if p.logDetail {
 			log.Printf("%d'st iteration...\n", loadTime)
 		}
@@ -250,6 +257,26 @@ func (p *ImporterContext[SS, SP, TP]) Import() {
 var paperCreateMeta = "{ \"create\" : { \"_index\" : \"papers\", \"_id\" : \"%s\"} }\n"
 var authorPubUpdateMeta = "{ \"update\" : { \"_index\" : \"authors\", \"_id\" : \"%s\"} }\n"
 var authorPubUpdateQuery = "{ \"scripted_upsert\": true, \"script\": { \"source\": \"if (!ctx._source.pubs.contains(params.pub)) {ctx._source.pubs.add(params.pub)}\", \"params\" : {\"pub\" : {\"i\" : \"%s\", \"r\" : %d}}}, \"upsert\": %s}\n"
+
+func restartContainer() {
+	log.Printf("restart elasticsearch container ...")
+	cmd := exec.Command("/bin/bash", "-c", "docker container restart elasticsearch")
+	output, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Panic("无法获取 docker restart 命令 的标准输出管道", err.Error())
+	}
+	if err := cmd.Start(); err != nil {
+		log.Panic("docker container restart 命令执行失败，请检查命令输入是否有误", err.Error())
+	}
+	cmdOutputStr, err := ioutil.ReadAll(output)
+	PanicError(err)
+	PanicError(cmd.Wait())
+	log.Printf("restart done\n")
+	log.Printf("docker restart command output :%s\n", string(cmdOutputStr))
+	log.Printf("wait 30 second to prepare elasticsearch\n")
+	time.Sleep(30 * time.Second)
+	GetNewClient()
+}
 
 func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 	if logDetail {
@@ -339,18 +366,23 @@ func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 	var err error
 	for {
 		res, err = es.Bulk(bytes.NewReader(buffer.Bytes()))
-		if err == nil {
+		if tryTime >= 10 {
 			break
-		} else if tryTime < 10 {
-			tryTime++
+		} else if err != nil {
 			log.Printf("execute es.Bulk occurs error: %s\n", err.Error())
 			time.Sleep(5 * time.Second)
 			log.Printf("try to reconnect :%d\n", tryTime)
 			GetNewClient()
+		} else {
+			if common.HandleResponseError(res) != "" {
+				restartContainer()
+			} else {
+				break
+			}
 		}
+		tryTime++
 	}
 
-	common.HandleResponseError(res)
 	block := UpdateBulkResponse{}
 	if err := json.NewDecoder(res.Body).Decode(&block); err != nil {
 		log.Panic("parse response body error:\n", err)
