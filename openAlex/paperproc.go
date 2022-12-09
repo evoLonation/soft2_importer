@@ -312,7 +312,7 @@ func getIndexCount(indexname string) bool {
 	err = json.NewDecoder(res.Body).Decode(&mp)
 	PanicError(err)
 
-	log.Printf("%s index count:%d\n", indexname, mp["count"].(int))
+	log.Printf("%s index count:%f\n", indexname, mp["count"].(float64))
 	return true
 }
 
@@ -408,13 +408,13 @@ func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 	var res *esapi.Response
 	var err error
 	res, err = es.Bulk(bytes.NewReader([]byte(beforeString)))
-	if err != nil || common.HandleResponseError(res) {
+	if err != nil || !common.HandleResponseError(res) {
 		if err != nil {
 			log.Printf("execute es.Bulk occurs error: %s\n", err.Error())
 		}
 		checkESReadyRetry()
 		res, err = es.Bulk(bytes.NewReader([]byte(beforeString)))
-		if err != nil || common.HandleResponseError(res) {
+		if err != nil || !common.HandleResponseError(res) {
 			if err != nil {
 				log.Panicf("execute es.Bulk occurs error: %s\n", err.Error())
 			}
