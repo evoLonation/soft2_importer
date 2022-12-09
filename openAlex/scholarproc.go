@@ -54,6 +54,8 @@ func GetNewClient() {
 	es, err = elasticsearch.NewClient(cfg)
 	PanicError(err)
 	log.Println(es.Info())
+	checkESReadyRetry()
+	log.Printf("get a new connection with es of full preparation \n")
 }
 
 //updated_date=2022-08-28

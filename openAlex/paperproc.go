@@ -260,7 +260,7 @@ var authorPubUpdateQuery = "{ \"scripted_upsert\": true, \"script\": { \"source\
 
 func restartContainer() {
 	log.Printf("restart elasticsearch container ...")
-	cmd := exec.Command("/bin/bash", "-c", "docker container restart elasticsearch")
+	cmd := exec.Command("/bin/bash", "-c", "docker container restart es")
 	output, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Panic("无法获取 docker restart 命令 的标准输出管道", err.Error())
@@ -273,9 +273,47 @@ func restartContainer() {
 	PanicError(cmd.Wait())
 	log.Printf("restart done\n")
 	log.Printf("docker restart command output :%s\n", string(cmdOutputStr))
-	log.Printf("wait 120 second to prepare elasticsearch\n")
-	time.Sleep(5 * time.Minute)
+	log.Printf("wait 60 second to prepare elasticsearch\n")
+	time.Sleep(time.Minute)
 	GetNewClient()
+}
+
+func checkESReadyRetry() {
+	trytime := 0
+	for {
+		if checkESReady() {
+			break
+		} else {
+			trytime++
+			if trytime > 10 {
+				log.Panic("retry 10 times\n")
+			}
+			log.Printf("es shards not ready yet. retry after 10 seconds...\n")
+			time.Sleep(10 * time.Second)
+		}
+	}
+}
+
+func checkESReady() bool {
+	log.Printf("check shard ready...\n")
+	return getIndexCount("papers") && getIndexCount("authors")
+}
+
+func getIndexCount(indexname string) bool {
+	res, err := es.Count(es.Count.WithIndex(indexname))
+	if err != nil {
+		log.Printf("send request error:\n%s", err.Error())
+		return false
+	}
+	if !common.HandleResponseError(res) {
+		return false
+	}
+	mp := map[string]interface{}{}
+	err = json.NewDecoder(res.Body).Decode(&mp)
+	PanicError(err)
+
+	log.Printf("%s index count:%d\n", indexname, mp["count"].(int))
+	return true
 }
 
 func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
@@ -358,33 +396,30 @@ func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 		}
 		return 0
 	}
-	if logDetail {
-		log.Printf("execute body: \n%s", string(buffer.Bytes()))
-	}
+
 	beforeString := string(buffer.Bytes())
 	beforeString = strings.ReplaceAll(beforeString, "\\u0000", "")
 	beforeString = strings.ReplaceAll(beforeString, "\\u001f", "")
 	beforeString = strings.ReplaceAll(beforeString, "\\u001e", "")
-	tryTime := 0
+	if logDetail {
+		log.Printf("execute body: \n%s", string(buffer.Bytes()))
+	}
+
 	var res *esapi.Response
 	var err error
-	for {
-		res, err = es.Bulk(bytes.NewReader([]byte(beforeString)))
-		if tryTime >= 10 {
-			log.Panicf("try %d times fail\n", tryTime)
-		} else if err != nil {
+	res, err = es.Bulk(bytes.NewReader([]byte(beforeString)))
+	if err != nil || common.HandleResponseError(res) {
+		if err != nil {
 			log.Printf("execute es.Bulk occurs error: %s\n", err.Error())
-			time.Sleep(5 * time.Second)
-			log.Printf("try to reconnect :%d\n", tryTime)
-			GetNewClient()
-		} else {
-			if common.HandleResponseError(res) != "" {
-				restartContainer()
-			} else {
-				break
-			}
 		}
-		tryTime++
+		checkESReadyRetry()
+		res, err = es.Bulk(bytes.NewReader([]byte(beforeString)))
+		if err != nil || common.HandleResponseError(res) {
+			if err != nil {
+				log.Panicf("execute es.Bulk occurs error: %s\n", err.Error())
+			}
+			log.Panic()
+		}
 	}
 
 	block := UpdateBulkResponse{}
