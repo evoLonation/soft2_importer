@@ -285,8 +285,8 @@ func checkESReadyRetry() {
 			break
 		} else {
 			trytime++
-			if trytime > 10 {
-				log.Panic("retry 10 times\n")
+			if trytime > 20 {
+				log.Panic("retry 20 times\n")
 			}
 			log.Printf("es shards not ready yet. retry after 10 seconds...\n")
 			time.Sleep(10 * time.Second)
