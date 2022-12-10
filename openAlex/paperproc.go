@@ -55,7 +55,7 @@ type ImporterContext[SS any, SP Parseable[TP], TP ValidationAble] struct {
 	targetTypeName  string
 	target          string
 	createdNum      int
-	importToES      func(target []TP, logDetail bool) int
+	importToES      func(target []TP, logDetail bool, createdNum chan int)
 	fileReader      *multiFileReader
 }
 
@@ -75,7 +75,7 @@ func getImporterContext[SS any, SP Parseable[TP], TP ValidationAble](
 	startOffset int64,
 	oneBulkNum int,
 	logDetail bool,
-	importFunc func(target []TP, logDetail bool) int,
+	importFunc func(target []TP, logDetail bool, createdNum chan int),
 ) *ImporterContext[SS, SP, TP] {
 	try := any(new(SS))
 	_, is := try.(SP)
@@ -224,12 +224,24 @@ func (p *ImporterContext[SS, SP, TP]) Import() {
 	scanner := p.createScanner()
 	nextLogNum := p.logInterval
 	//lastRestart := time.Now()
+	cycleNum := 10
+	createdNums := make(chan int, cycleNum)
+	i := 0
 	for {
-		//if time.Since(lastRestart).Hours() >= 12 {
-		//	log.Printf("already pass 12 hours util last restart\n")
-		//	restartContainer()
-		//	lastRestart = time.Now()
-		//}
+		if i >= cycleNum {
+			i = 0
+			if p.logDetail {
+				log.Printf("already concurrent send %d time request, it is time to receive it all", cycleNum)
+			}
+			for j := 0; j < 10; j++ {
+				totalCreatedNum += <-createdNums
+			}
+			for totalNum > nextLogNum {
+				log.Printf("already import %d lines and send %d bulk requests...\n", totalNum, loadTime)
+				nextLogNum += p.logInterval
+			}
+
+		}
 		if p.logDetail {
 			log.Printf("%d'st iteration...\n", loadTime)
 		}
@@ -241,16 +253,14 @@ func (p *ImporterContext[SS, SP, TP]) Import() {
 		for i, e := range sourceStructs {
 			targetStructs[i] = e.Parse()
 		}
-		totalCreatedNum += p.importToES(targetStructs, p.logDetail)
+		go p.importToES(targetStructs, p.logDetail, createdNums)
 		if p.logDetail {
 			log.Printf("%d'st iteration done!\n", loadTime)
 		}
+		i++
 		loadTime++
 		totalNum += len(sourceStructs)
-		for totalNum > nextLogNum {
-			log.Printf("already import %d lines and send %d bulk requests...\n", totalNum, loadTime)
-			nextLogNum += p.logInterval
-		}
+
 	}
 }
 
@@ -316,12 +326,14 @@ func getIndexCount(indexname string) bool {
 	return true
 }
 
-func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
+func importPaperToES(targets []*types.Paper, logDetail bool, createdNumChan chan int) {
 	if logDetail {
 		log.Printf("send update paper bulk request to ES...\n")
 	}
 	if len(targets) == 0 {
 		log.Printf("targets length = 0, why? anyway i dont send request")
+		createdNumChan <- 0
+		return
 	}
 	//对于每个targets，先判断是否有效，有效就创建
 	buffer := bytes.Buffer{}
@@ -394,7 +406,8 @@ func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 		if logDetail {
 			log.Printf("all targets unvalidation, do not send request\n")
 		}
-		return 0
+		createdNumChan <- 0
+		return
 	}
 
 	beforeString := string(buffer.Bytes())
@@ -404,7 +417,7 @@ func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 	if logDetail {
 		log.Printf("execute body: \n%s", string(buffer.Bytes()))
 	}
-
+	createdNum := 0
 	var res *esapi.Response
 	var err error
 	res, err = es.Bulk(bytes.NewReader([]byte(beforeString)))
@@ -458,5 +471,6 @@ func importPaperToES(targets []*types.Paper, logDetail bool) (createdNum int) {
 	if logDetail {
 		log.Printf("send done\n")
 	}
+	createdNumChan <- createdNum
 	return
 }
