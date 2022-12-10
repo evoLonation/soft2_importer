@@ -224,23 +224,18 @@ func (p *ImporterContext[SS, SP, TP]) Import() {
 	scanner := p.createScanner()
 	nextLogNum := p.logInterval
 	//lastRestart := time.Now()
-	cycleNum := 10
-	createdNums := make(chan int, cycleNum)
+	maxConcurrentNum := 10
+	createdNumChan := make(chan int, maxConcurrentNum)
+	for i := 0; i < maxConcurrentNum; i++ {
+		createdNumChan <- 0
+	}
+
 	i := 0
 	for {
-		if i >= cycleNum {
-			i = 0
-			if p.logDetail {
-				log.Printf("already concurrent send %d time request, it is time to receive it all", cycleNum)
-			}
-			for j := 0; j < 10; j++ {
-				totalCreatedNum += <-createdNums
-			}
-			for totalNum > nextLogNum {
-				log.Printf("already import %d lines and send %d bulk requests...\n", totalNum, loadTime)
-				nextLogNum += p.logInterval
-			}
-
+		totalCreatedNum += <-createdNumChan
+		for totalNum > nextLogNum {
+			log.Printf("already import %d lines and send %d bulk requests...\n", totalNum, loadTime)
+			nextLogNum += p.logInterval
 		}
 		if p.logDetail {
 			log.Printf("%d'st iteration...\n", loadTime)
@@ -253,7 +248,7 @@ func (p *ImporterContext[SS, SP, TP]) Import() {
 		for i, e := range sourceStructs {
 			targetStructs[i] = e.Parse()
 		}
-		go p.importToES(targetStructs, p.logDetail, createdNums)
+		go p.importToES(targetStructs, p.logDetail, createdNumChan)
 		if p.logDetail {
 			log.Printf("%d'st iteration done!\n", loadTime)
 		}
