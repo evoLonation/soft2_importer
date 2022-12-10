@@ -223,13 +223,13 @@ func (p *ImporterContext[SS, SP, TP]) Import() {
 	}()
 	scanner := p.createScanner()
 	nextLogNum := p.logInterval
-	lastRestart := time.Now()
+	//lastRestart := time.Now()
 	for {
-		if time.Since(lastRestart).Hours() >= 12 {
-			log.Printf("already pass 12 hours util last restart\n")
-			restartContainer()
-			lastRestart = time.Now()
-		}
+		//if time.Since(lastRestart).Hours() >= 12 {
+		//	log.Printf("already pass 12 hours util last restart\n")
+		//	restartContainer()
+		//	lastRestart = time.Now()
+		//}
 		if p.logDetail {
 			log.Printf("%d'st iteration...\n", loadTime)
 		}
