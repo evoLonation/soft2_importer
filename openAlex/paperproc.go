@@ -232,7 +232,11 @@ func (p *ImporterContext[SS, SP, TP]) Import() {
 
 	i := 0
 	for {
-		totalCreatedNum += <-createdNumChan
+		createdNum := <-createdNumChan
+		if createdNum == -1 {
+			log.Panic("one of the goroutine to send request to es occur error!\n")
+		}
+		totalCreatedNum += createdNum
 		for totalNum > nextLogNum {
 			log.Printf("already import %d lines and send %d bulk requests...\n", totalNum, loadTime)
 			nextLogNum += p.logInterval
@@ -322,11 +326,18 @@ func getIndexCount(indexname string) bool {
 }
 
 func importPaperToES(targets []*types.Paper, logDetail bool, createdNumChan chan int) {
+	success := false
+	defer func() {
+		if !success {
+			createdNumChan <- -1
+		}
+	}()
 	if logDetail {
 		log.Printf("send update paper bulk request to ES...\n")
 	}
 	if len(targets) == 0 {
 		log.Printf("targets length = 0, why? anyway i dont send request")
+		success = true
 		createdNumChan <- 0
 		return
 	}
@@ -401,6 +412,7 @@ func importPaperToES(targets []*types.Paper, logDetail bool, createdNumChan chan
 		if logDetail {
 			log.Printf("all targets unvalidation, do not send request\n")
 		}
+		success = true
 		createdNumChan <- 0
 		return
 	}
@@ -412,24 +424,39 @@ func importPaperToES(targets []*types.Paper, logDetail bool, createdNumChan chan
 	if logDetail {
 		log.Printf("execute body: \n%s", string(buffer.Bytes()))
 	}
-	createdNum := 0
+
 	var res *esapi.Response
 	var err error
-	res, err = es.Bulk(bytes.NewReader([]byte(beforeString)))
+	var createdNum int
+	for tryTime := 0; ; tryTime++ {
+		if tryTime >= 3 {
+			log.Panic("try 3 times to recovery the es error, but failed\n")
+		}
+		res, err = es.Bulk(bytes.NewReader([]byte(beforeString)))
+		createdNum = checkBulkSuccess(validationNum, err, res)
+		if createdNum == -1 {
+			checkESReadyRetry()
+		} else {
+			break
+		}
+	}
+	if logDetail {
+		log.Printf("send done\n")
+	}
+	success = true
+	createdNumChan <- createdNum
+	return
+}
+
+// return -1 means wrong, other means created num
+func checkBulkSuccess(validationNum int, err error, res *esapi.Response) int {
+	createdNum := 0
 	if err != nil || !common.HandleResponseError(res) {
 		if err != nil {
 			log.Printf("execute es.Bulk occurs error: %s\n", err.Error())
 		}
-		checkESReadyRetry()
-		res, err = es.Bulk(bytes.NewReader([]byte(beforeString)))
-		if err != nil || !common.HandleResponseError(res) {
-			if err != nil {
-				log.Panicf("execute es.Bulk occurs error: %s\n", err.Error())
-			}
-			log.Panic()
-		}
+		return -1
 	}
-
 	block := UpdateBulkResponse{}
 	if err := json.NewDecoder(res.Body).Decode(&block); err != nil {
 		log.Panic("parse response body error:\n", err)
@@ -455,17 +482,16 @@ func importPaperToES(targets []*types.Paper, logDetail bool, createdNumChan chan
 					if err != nil {
 						log.Panicf("error when marshal es response error : %s\n", err)
 					}
+					if status == 503 {
+						log.Printf("es internal error:\nstatus : %d\nerror json : \n%s\n", item.Create.Status, string(errBytes))
+						return -1
+					}
 					log.Panicf("es internal error:\nstatus : %d\nerror json : \n%s\n", item.Create.Status, string(errBytes))
 				}
-
 			}
 		} else {
 			createdNum += validationNum
 		}
 	}
-	if logDetail {
-		log.Printf("send done\n")
-	}
-	createdNumChan <- createdNum
-	return
+	return createdNum
 }
