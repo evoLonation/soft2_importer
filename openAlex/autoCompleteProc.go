@@ -60,13 +60,13 @@ func importAutoPaperToES(targets []*types.Paper, logDetail bool, createdNumChan 
 		var ids []string
 		var querys []string
 		ids = append(ids, removeUnavailableCharacter(target.Title))
-		weight := int(math.Max(10000, 1+(float64(target.NCitation)-1000)*0.1))
+		weight := int(math.Min(10000, 1+(float64(target.NCitation)-1000)*0.1))
 		querys = append(querys, fmt.Sprintf(autoUpdateQuery, weight, removeUnavailableCharacter(target.Title), weight))
 		for _, e := range target.Keywords {
 			ids = append(ids, removeUnavailableCharacter(e))
 			querys = append(querys, fmt.Sprintf(autoUpdateQuery, weight/len(target.Keywords), removeUnavailableCharacter(e), weight/len(target.Keywords)))
-			log.Printf("id : %s", removeUnavailableCharacter(e))
-			log.Printf("query: %s", fmt.Sprintf(autoUpdateQuery, weight/len(target.Keywords), removeUnavailableCharacter(e), weight/len(target.Keywords)))
+			//log.Printf("id : %s", removeUnavailableCharacter(e))
+			//log.Printf("query: %s", fmt.Sprintf(autoUpdateQuery, weight/len(target.Keywords), removeUnavailableCharacter(e), weight/len(target.Keywords)))
 		}
 		for i := 0; i < len(ids); i++ {
 			for tryTime := 0; ; tryTime++ {
