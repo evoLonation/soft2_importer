@@ -11,9 +11,9 @@ import (
 	"strings"
 )
 
-func GetAutoCompleteImporterContext(rootPath string, startDir string, startFile string, fileOffset int64, oneBulkNum int, logDetail bool) *PaperImporterContext {
+func GetAutoCompleteImporterContext(rootPath string, startDir string, startFile string, fileOffset int64, oneBulkNum int, logInterval int, logDetail bool) *PaperImporterContext {
 	return &PaperImporterContext{
-		ImporterContext: getImporterContext[OAArticle, *OAArticle, *types.Paper](rootPath, startDir, startFile, fileOffset, oneBulkNum, logDetail, importAutoPaperToES),
+		ImporterContext: getImporterContext[OAArticle, *OAArticle, *types.Paper](rootPath, startDir, startFile, fileOffset, oneBulkNum, logInterval, logDetail, importAutoPaperToES),
 	}
 }
 

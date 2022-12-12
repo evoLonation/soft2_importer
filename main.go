@@ -20,6 +20,7 @@ var sendEmail = flag.Bool("se", false, "whether or not send email when error")
 var startOffset = flag.Int64("so", 0, "start offset of the start file")
 var logFile = flag.String("lf", "log.txt", "log file name")
 var bulkNum = flag.Int("bn", 64, "one bulk paper num")
+var logInternal = flag.Int("li", 5000, "log interval")
 
 func main() {
 	flag.Parse()
@@ -34,6 +35,7 @@ func main() {
 	log.Printf("totalpath : %s\n", *rootPath)
 	log.Printf("startFile : %s\n", *startFile)
 	log.Printf("bulkNum : %d\n", *bulkNum)
+	log.Printf("logInterval : %d\n", *logInternal)
 	openAlex.TotalPath = *rootPath
 	openAlex.StartDir = *startDir
 	openAlex.LogDetail = *logDetail
@@ -42,10 +44,10 @@ func main() {
 		openAlex.ImportScholars()
 	} else if *importType == "papers" {
 		log.Println("start to import papers")
-		openAlex.GetPaperImporterContext(*rootPath, *startDir, *startFile, *startOffset, *bulkNum, *logDetail).Import()
+		openAlex.GetPaperImporterContext(*rootPath, *startDir, *startFile, *startOffset, *bulkNum, *logInternal, *logDetail).Import()
 	} else if *importType == "auto-complete" {
 		log.Println("start to import auto completes")
-		openAlex.GetAutoCompleteImporterContext(*rootPath, *startDir, *startFile, *startOffset, *bulkNum, *logDetail).Import()
+		openAlex.GetAutoCompleteImporterContext(*rootPath, *startDir, *startFile, *startOffset, *bulkNum, *logInternal, *logDetail).Import()
 	} else {
 		openAlex.PanicError(errors.New("type argument is not authors or paper neither"))
 	}

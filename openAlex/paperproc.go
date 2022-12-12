@@ -63,9 +63,9 @@ type PaperImporterContext struct {
 	*ImporterContext[OAArticle, *OAArticle, *types.Paper]
 }
 
-func GetPaperImporterContext(rootPath string, startDir string, startFile string, fileOffset int64, oneBulkNum int, logDetail bool) *PaperImporterContext {
+func GetPaperImporterContext(rootPath string, startDir string, startFile string, fileOffset int64, oneBulkNum int, logInternal int, logDetail bool) *PaperImporterContext {
 	return &PaperImporterContext{
-		ImporterContext: getImporterContext[OAArticle, *OAArticle, *types.Paper](rootPath, startDir, startFile, fileOffset, oneBulkNum, logDetail, importPaperToES),
+		ImporterContext: getImporterContext[OAArticle, *OAArticle, *types.Paper](rootPath, startDir, startFile, fileOffset, oneBulkNum, logInternal, logDetail, importPaperToES),
 	}
 }
 func getImporterContext[SS any, SP Parseable[TP], TP ValidationAble](
@@ -74,6 +74,7 @@ func getImporterContext[SS any, SP Parseable[TP], TP ValidationAble](
 	startFile string,
 	startOffset int64,
 	oneBulkNum int,
+	logInternal int,
 	logDetail bool,
 	importFunc func(target []TP, logDetail bool, createdNum chan int),
 ) *ImporterContext[SS, SP, TP] {
@@ -90,7 +91,7 @@ func getImporterContext[SS any, SP Parseable[TP], TP ValidationAble](
 		directoryPrefix: "updated_date=",
 		oneBulkNum:      oneBulkNum,
 		lineLength:      1 << 22, // 4M
-		logInterval:     5000,
+		logInterval:     logInternal,
 		logDetail:       logDetail,
 		sourceTypeName:  reflect.TypeOf(new(SP)).Name(),
 		targetTypeName:  reflect.TypeOf(new(TP)).Name(),
@@ -238,7 +239,7 @@ func (p *ImporterContext[SS, SP, TP]) Import() {
 		}
 		totalCreatedNum += createdNum
 		for totalNum > nextLogNum {
-			log.Printf("already import %d lines and send %d bulk requests...\n", totalNum, loadTime)
+			log.Printf("already import %d lines and send %d bulk requests, actually created %d docs\n", totalNum, loadTime, totalCreatedNum)
 			nextLogNum += p.logInterval
 		}
 		if p.logDetail {
