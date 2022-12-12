@@ -90,10 +90,9 @@ func importAutoPaperToES(targets []*types.Paper, logDetail bool, createdNumChan 
 }
 
 func checkAutoSuccess(err error, res *esapi.Response) int {
-	if err != nil || !common.HandleResponseError(res) {
-		if err != nil {
-			log.Printf("execute es.Bulk occurs error: %s\n", err.Error())
-		}
+	common.HandleResponseError(res)
+	if err != nil {
+		log.Printf("execute es.Bulk occurs error: %s\n", err.Error())
 		return -1
 	}
 	if res.StatusCode == 201 {
