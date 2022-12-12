@@ -100,7 +100,7 @@ func checkAutoSuccess(err error, res *esapi.Response) int {
 	} else if res.StatusCode == 200 {
 		return 0
 	} else {
-		log.Panic("http response neither 200 or 201")
+		log.Printf("http response neither 200 or 201\n")
 	}
 	return -1
 }
