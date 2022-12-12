@@ -1,6 +1,7 @@
 package openAlex
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -37,6 +38,11 @@ func gunzip(file string) string {
 	if !strings.HasSuffix(file, ".gz") {
 		log.Panicf("该文件不是.gz文件 : %s", file)
 	}
+	before, _, _ := strings.Cut(file, ".gz")
+	if _, err := os.Stat(before); err == nil {
+		fmt.Printf("File %s already unzip to %s\n", file, before)
+		return before
+	}
 	log.Printf("gunzip file %s...", file)
 	cmd := exec.Command("/bin/bash", "-c", `gunzip -k -f `+file)
 	output, err := cmd.StdoutPipe()
@@ -51,7 +57,6 @@ func gunzip(file string) string {
 	PanicError(cmd.Wait())
 	log.Printf("unzip done\n")
 	log.Printf("gunzip command output :%s\n", string(bytes))
-	before, _, _ := strings.Cut(file, ".gz")
 	return before
 }
 func (p *multiFileReader) GetCurrentFileOffset() int64 {
