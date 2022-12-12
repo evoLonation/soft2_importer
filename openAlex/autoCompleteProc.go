@@ -6,6 +6,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"log"
 	"math"
+	"net/url"
 	"soft2_importer/common"
 	"soft2_importer/types"
 	"strings"
@@ -59,7 +60,7 @@ func importAutoPaperToES(targets []*types.Paper, logDetail bool, createdNumChan 
 		// 计算得到id和query
 		var ids []string
 		var querys []string
-		ids = append(ids, removeUnavailableCharacter(target.Title))
+		ids = append(ids, removeUnavailableCharacter(url.QueryEscape(target.Title)))
 		weight := int(math.Min(10000, 1+(float64(target.NCitation)-1000)*0.1))
 		querys = append(querys, fmt.Sprintf(autoUpdateQuery, weight, removeUnavailableCharacter(target.Title), weight))
 		for _, e := range target.Keywords {
