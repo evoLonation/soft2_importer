@@ -43,8 +43,10 @@ func main() {
 	} else if *importType == "papers" {
 		log.Println("start to import papers")
 		openAlex.GetPaperImporterContext(*rootPath, *startDir, *startFile, *startOffset, *bulkNum, *logDetail).Import()
+	} else if *importType == "auto-complete" {
+		log.Println("start to import auto completes")
+		openAlex.GetAutoCompleteImporterContext(*rootPath, *startDir, *startFile, *startOffset, *bulkNum, *logDetail).Import()
 	} else {
-		log.Println("start to import authors")
 		openAlex.PanicError(errors.New("type argument is not authors or paper neither"))
 	}
 }
