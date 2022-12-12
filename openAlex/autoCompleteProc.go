@@ -55,7 +55,7 @@ func importAutoPaperToES(targets []*types.Paper, logDetail bool, createdNumChan 
 			}
 			continue
 		}
-		log.Printf("find a paper that number of citation is bigger than 1000!\n")
+		//log.Printf("find a paper that number of citation is bigger than 1000!\n")
 		// 计算得到id和query
 		var ids []string
 		var querys []string
