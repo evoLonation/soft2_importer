@@ -7,7 +7,6 @@ import (
 	"github.com/jordan-wright/email"
 	"log"
 	"net/smtp"
-	"net/url"
 	"os"
 	"soft2_importer/openAlex"
 )
@@ -24,9 +23,6 @@ var bulkNum = flag.Int("bn", 64, "one bulk paper num")
 var logInternal = flag.Int("li", 5000, "log interval")
 
 func main() {
-	str := "我是一个带/的字符串"
-	println(url.QueryEscape(url.QueryEscape(str)))
-	println(url.QueryEscape(str))
 	flag.Parse()
 	defer func() {
 		if *sendEmail {
