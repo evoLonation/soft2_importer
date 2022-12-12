@@ -101,8 +101,8 @@ func checkAutoSuccess(err error, res *esapi.Response) int {
 		return 0
 	} else {
 		log.Printf("http response neither 200 or 201\n")
+		return 0
 	}
-	return -1
 }
 
 func removeUnavailableCharacter(str string) string {
