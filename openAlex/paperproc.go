@@ -483,11 +483,16 @@ func checkBulkSuccess(validationNum int, err error, res *esapi.Response) int {
 					if err != nil {
 						log.Panicf("error when marshal es response error : %s\n", err)
 					}
+					log.Printf("es internal error:\nstatus : %d\nerror json : \n%s\n", item.Create.Status, string(errBytes))
 					if status == 503 {
-						log.Printf("es internal error:\nstatus : %d\nerror json : \n%s\n", item.Create.Status, string(errBytes))
+						//service unavailable
 						return -1
 					}
-					log.Panicf("es internal error:\nstatus : %d\nerror json : \n%s\n", item.Create.Status, string(errBytes))
+					if status == 400 {
+						// bad request
+						return 0
+					}
+					return -1
 				}
 			}
 		} else {
