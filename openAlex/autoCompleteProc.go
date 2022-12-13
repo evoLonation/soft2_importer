@@ -114,11 +114,13 @@ func (p *AutoCompleteContext) importMain(index string, factor float64, name stri
 			fields := hit.(map[string]interface{})["fields"].(map[string]interface{})
 			title := fields[name].([]interface{})[0].(string)
 			nCitation := fields["n_citation"].([]interface{})[0].(float64)
-			keywords := fields[keyword].([]interface{})
-
+			keywords, success := fields[keyword].([]interface{})
+			if !success {
+				keywords = make([]interface{}, 0)
+			}
 			id := removeUnavailableCharacter(url.QueryEscape(title))
 			weight := int(math.Min(10000, nCitation*factor))
-			query := fmt.Sprintf(autoUpdateQuery, removeUnavailableCharacter(title), weight)
+			query := fmt.Sprintf(autoUpdateQuery, strings.ReplaceAll(removeUnavailableCharacter(title), "\"", "\\\""), weight)
 			for _, e := range keywords {
 				keyword := e.(string)
 				keywordsMap[keyword] += weight / len(keywords)
