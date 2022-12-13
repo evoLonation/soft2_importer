@@ -239,11 +239,11 @@ func importAutoPaperToES(targets []*types.Paper, logDetail bool, createdNumChan 
 }
 
 func checkAutoSuccess(err error, res *esapi.Response) int {
-	common.HandleResponseError(res)
 	if err != nil {
 		log.Printf("execute es.Bulk occurs error: %s\n", err.Error())
 		return -1
 	}
+	common.HandleResponseError(res)
 	if res.StatusCode == 201 {
 		return 1
 	} else if res.StatusCode == 200 {
