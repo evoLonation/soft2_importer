@@ -37,8 +37,8 @@ var searchByCitationQuery = `
         }
     },
     "fields": [
-        "keywords",
-        "title",
+        "%s",
+        "%s",
         "n_citation"
     ],
     "_source": false
@@ -60,55 +60,85 @@ var autoUpdateQuery = `
 
 func (p *AutoCompleteContext) Import() {
 	log.Printf("start import")
+	keywordMap := make(map[string]int)
+	p.importMain("authors", 0.05, "name", "tags.t", keywordMap)
+	p.importMain("papers", 0.1, "title", "keywords", keywordMap)
+	p.importKeywords(keywordMap)
+}
+
+func (p *AutoCompleteContext) importKeywords(keywordsMap map[string]int) {
+	log.Printf("start import keywords")
+	i := 0
+	totalCreatedNum := 0
+	for keyword, weight := range keywordsMap {
+		if i%p.oneRequestSize == 0 {
+			log.Printf("already pass %d keywords, created %d hot words", i, totalCreatedNum)
+		}
+		id := removeUnavailableCharacter(url.QueryEscape(keyword))
+		query := fmt.Sprintf(autoUpdateQuery, weight, removeUnavailableCharacter(keyword), weight)
+		for tryTime := 0; ; tryTime++ {
+			if tryTime >= 3 {
+				log.Panic("try 3 times to recovery the es error, but failed\n")
+			}
+			res, err := es.Update("auto-complete", id, bytes.NewBufferString(query))
+			createdNum := checkAutoSuccess(err, res)
+			if createdNum == -1 {
+				checkESReadyRetry()
+			} else {
+				totalCreatedNum += createdNum
+				break
+			}
+		}
+		i++
+	}
+}
+
+// factor: papers 0.1, authors 0.05
+func (p *AutoCompleteContext) importMain(index string, factor float64, name string, keyword string, keywordsMap map[string]int) int {
+	log.Printf("start import %s", index)
 	totalCreatedNum := 0
 	for i := 0; i < 10000; i += p.oneRequestSize {
 		log.Printf("already pass %d items, created %d hot words", i, totalCreatedNum)
 		from := i
 		size := int(math.Min(float64(p.oneRequestSize), float64(p.maxNumber-i)))
-		res, err := searchPaper(*bytes.NewBufferString(fmt.Sprintf(searchByCitationQuery, from, size)))
+		res, err := search(*bytes.NewBufferString(fmt.Sprintf(searchByCitationQuery, from, size, name, keyword)), index)
 		PanicError(err)
 		for _, hit := range res["hits"].(map[string]interface{})["hits"].([]interface{}) {
 			fields := hit.(map[string]interface{})["fields"].(map[string]interface{})
-			title := fields["title"].([]interface{})[0].(string)
+			title := fields[name].([]interface{})[0].(string)
 			nCitation := fields["n_citation"].([]interface{})[0].(float64)
-			keywords := fields["keywords"].([]interface{})
+			keywords := fields[keyword].([]interface{})
 
-			var ids []string
-			var querys []string
-			ids = append(ids, removeUnavailableCharacter(url.QueryEscape(title)))
-			weight := int(math.Min(10000, float64(nCitation)*0.1))
-			querys = append(querys, fmt.Sprintf(autoUpdateQuery, weight, removeUnavailableCharacter(title), weight))
-			for i, e := range keywords {
+			id := removeUnavailableCharacter(url.QueryEscape(title))
+			weight := int(math.Min(10000, nCitation*factor))
+			query := fmt.Sprintf(autoUpdateQuery, weight, removeUnavailableCharacter(title), weight)
+			for _, e := range keywords {
 				keyword := e.(string)
-				ids = append(ids, url.QueryEscape(removeUnavailableCharacter(keyword)))
-				querys = append(querys, fmt.Sprintf(autoUpdateQuery, weight/len(keywords), removeUnavailableCharacter(keyword), weight/len(keywords)))
-				log.Printf("id : %s", ids[i+1])
-				log.Printf("query: %s", querys[i+1])
+				keywordsMap[keyword] += weight / len(keywords)
 			}
-			for i := 0; i < len(ids); i++ {
-				for tryTime := 0; ; tryTime++ {
-					if tryTime >= 3 {
-						log.Panic("try 3 times to recovery the es error, but failed\n")
-					}
-					res, err := es.Update("auto-complete", ids[i], bytes.NewBufferString(querys[i]))
-					createdNum := checkAutoSuccess(err, res)
-					if createdNum == -1 {
-						checkESReadyRetry()
-					} else {
-						totalCreatedNum += createdNum
-						break
-					}
+			for tryTime := 0; ; tryTime++ {
+				if tryTime >= 3 {
+					log.Panic("try 3 times to recovery the es error, but failed\n")
+				}
+				res, err := es.Update("auto-complete", id, bytes.NewBufferString(query))
+				createdNum := checkAutoSuccess(err, res)
+				if createdNum == -1 {
+					checkESReadyRetry()
+				} else {
+					totalCreatedNum += createdNum
+					break
 				}
 			}
 		}
 	}
+	return totalCreatedNum
 }
 
-func searchPaper(query bytes.Buffer) (map[string]interface{}, error) {
+func search(query bytes.Buffer, index string) (map[string]interface{}, error) {
 	var res map[string]interface{}
 	resp, err := es.Search(
 		es.Search.WithContext(context.Background()),
-		es.Search.WithIndex("papers"),
+		es.Search.WithIndex(index),
 		es.Search.WithBody(&query),
 		es.Search.WithTrackTotalHits(true),
 		es.Search.WithPretty(),
