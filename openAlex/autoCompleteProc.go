@@ -78,12 +78,12 @@ func (p *AutoCompleteContext) Import() {
 			ids = append(ids, removeUnavailableCharacter(url.QueryEscape(title)))
 			weight := int(math.Min(10000, float64(nCitation)*0.1))
 			querys = append(querys, fmt.Sprintf(autoUpdateQuery, weight, removeUnavailableCharacter(title), weight))
-			for _, e := range keywords {
+			for i, e := range keywords {
 				keyword := e.(string)
 				ids = append(ids, url.QueryEscape(removeUnavailableCharacter(keyword)))
 				querys = append(querys, fmt.Sprintf(autoUpdateQuery, weight/len(keywords), removeUnavailableCharacter(keyword), weight/len(keywords)))
-				//log.Printf("id : %s", removeUnavailableCharacter(e))
-				//log.Printf("query: %s", fmt.Sprintf(searchByCitationQuery, weight/len(target.Keywords), removeUnavailableCharacter(e), weight/len(target.Keywords)))
+				log.Printf("id : %s", ids[i+1])
+				log.Printf("query: %s", querys[i+1])
 			}
 			for i := 0; i < len(ids); i++ {
 				for tryTime := 0; ; tryTime++ {

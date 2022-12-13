@@ -12,7 +12,7 @@ import (
 )
 
 var rootPath = flag.String("oa", "data/openAlex/works", "the config file")
-var importType = flag.String("type", "papers", "the import type, could be authors or papers")
+var importType = flag.String("type", "auto-complete", "the import type, could be authors or papers")
 var startDir = flag.String("sd", "", "the directory to start, if empty , start from newest directory")
 var startFile = flag.String("sf", "", "the file to start, if empty , start from first file in directory")
 var logDetail = flag.Bool("ld", true, "whether or not log detail")
