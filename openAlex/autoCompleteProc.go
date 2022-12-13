@@ -44,18 +44,25 @@ var searchByCitationQuery = `
     "_source": false
 }`
 
+//var autoUpdateQuery = `
+//{
+//    "scripted_upsert": true,
+//    "script": {
+//        "source": "ctx._source.hot_word.weight += %d"
+//    },
+//    "upsert": {
+//        "hot_word": {
+//            "input" : "%s",
+//            "weight" : %d
+//        }
+//    }
+//}`
 var autoUpdateQuery = `
 {
-    "scripted_upsert": true,
-    "script": {
-        "source": "ctx._source.hot_word.weight += %d"
-    },
-    "upsert": {
-        "hot_word": {
-            "input" : "%s",
-            "weight" : %d
-        }
-    }
+	"hot_word": {
+		"input" : "%s",
+		"weight" : %d
+	}
 }`
 
 func (p *AutoCompleteContext) Import() {
@@ -75,12 +82,12 @@ func (p *AutoCompleteContext) importKeywords(keywordsMap map[string]int) {
 			log.Printf("already pass %d keywords, created %d hot words", i, totalCreatedNum)
 		}
 		id := removeUnavailableCharacter(url.QueryEscape(keyword))
-		query := fmt.Sprintf(autoUpdateQuery, weight, removeUnavailableCharacter(keyword), weight)
+		query := fmt.Sprintf(autoUpdateQuery, removeUnavailableCharacter(keyword), weight)
 		for tryTime := 0; ; tryTime++ {
 			if tryTime >= 3 {
 				log.Panic("try 3 times to recovery the es error, but failed\n")
 			}
-			res, err := es.Update("auto-complete", id, bytes.NewBufferString(query))
+			res, err := es.Index("auto-complete", bytes.NewBufferString(query), es.Index.WithDocumentID(id))
 			createdNum := checkAutoSuccess(err, res)
 			if createdNum == -1 {
 				checkESReadyRetry()
@@ -111,7 +118,7 @@ func (p *AutoCompleteContext) importMain(index string, factor float64, name stri
 
 			id := removeUnavailableCharacter(url.QueryEscape(title))
 			weight := int(math.Min(10000, nCitation*factor))
-			query := fmt.Sprintf(autoUpdateQuery, weight, removeUnavailableCharacter(title), weight)
+			query := fmt.Sprintf(autoUpdateQuery, removeUnavailableCharacter(title), weight)
 			for _, e := range keywords {
 				keyword := e.(string)
 				keywordsMap[keyword] += weight / len(keywords)
@@ -120,7 +127,7 @@ func (p *AutoCompleteContext) importMain(index string, factor float64, name stri
 				if tryTime >= 3 {
 					log.Panic("try 3 times to recovery the es error, but failed\n")
 				}
-				res, err := es.Update("auto-complete", id, bytes.NewBufferString(query))
+				res, err := es.Index("auto-complete", bytes.NewBufferString(query), es.Index.WithDocumentID(id))
 				createdNum := checkAutoSuccess(err, res)
 				if createdNum == -1 {
 					checkESReadyRetry()
