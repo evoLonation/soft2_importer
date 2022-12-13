@@ -47,7 +47,7 @@ func main() {
 		openAlex.GetPaperImporterContext(*rootPath, *startDir, *startFile, *startOffset, *bulkNum, *logInternal, *logDetail).Import()
 	} else if *importType == "auto-complete" {
 		log.Println("start to import auto completes")
-		openAlex.GetAutoCompleteImporterContext(*rootPath, *startDir, *startFile, *startOffset, *bulkNum, *logInternal, *logDetail).Import()
+		openAlex.GetAutoCompleteImporterContext().Import()
 	} else {
 		openAlex.PanicError(errors.New("type argument is not authors or paper neither"))
 	}

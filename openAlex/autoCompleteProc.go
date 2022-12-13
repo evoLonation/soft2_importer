@@ -2,6 +2,9 @@ package openAlex
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"log"
@@ -12,11 +15,34 @@ import (
 	"strings"
 )
 
-func GetAutoCompleteImporterContext(rootPath string, startDir string, startFile string, fileOffset int64, oneBulkNum int, logInterval int, logDetail bool) *PaperImporterContext {
-	return &PaperImporterContext{
-		ImporterContext: getImporterContext[OAArticle, *OAArticle, *types.Paper](rootPath, startDir, startFile, fileOffset, oneBulkNum, logInterval, logDetail, importAutoPaperToES),
+func GetAutoCompleteImporterContext() *AutoCompleteContext {
+	return &AutoCompleteContext{
+		oneRequestSize: 500,
+		maxNumber:      10000,
 	}
 }
+
+type AutoCompleteContext struct {
+	oneRequestSize int
+	maxNumber      int
+}
+
+var searchByCitationQuery = `
+{
+    "from": %d,
+    "size": %d,
+    "sort": {
+        "n_citation": {
+            "order": "desc"
+        }
+    },
+    "fields": [
+        "keywords",
+        "title",
+        "n_citation"
+    ],
+    "_source": false
+}`
 
 var autoUpdateQuery = `
 {
@@ -31,6 +57,89 @@ var autoUpdateQuery = `
         }
     }
 }`
+
+func (p *AutoCompleteContext) Import() {
+	log.Printf("start import")
+	totalCreatedNum := 0
+	for i := 0; i < 10000; i += p.oneRequestSize {
+		log.Printf("already pass %d items, created %d hot words", i, totalCreatedNum)
+		from := i
+		size := int(math.Min(float64(p.oneRequestSize), float64(p.maxNumber-i)))
+		res, err := searchPaper(*bytes.NewBufferString(fmt.Sprintf(searchByCitationQuery, from, size)))
+		PanicError(err)
+		for _, hit := range res["hits"].(map[string]interface{})["hits"].([]interface{}) {
+			fields := hit.(map[string]interface{})["fields"].(map[string]interface{})
+			title := fields["title"].([]interface{})[0].(string)
+			nCitation := fields["n_citation"].([]interface{})[0].(int)
+			keywords := fields["keywords"].([]interface{})
+
+			var ids []string
+			var querys []string
+			ids = append(ids, removeUnavailableCharacter(url.QueryEscape(title)))
+			weight := int(math.Min(10000, float64(nCitation)*0.1))
+			querys = append(querys, fmt.Sprintf(autoUpdateQuery, weight, removeUnavailableCharacter(title), weight))
+			for _, e := range keywords {
+				keyword := e.(string)
+				ids = append(ids, url.QueryEscape(removeUnavailableCharacter(keyword)))
+				querys = append(querys, fmt.Sprintf(autoUpdateQuery, weight/len(keywords), removeUnavailableCharacter(keyword), weight/len(keywords)))
+				//log.Printf("id : %s", removeUnavailableCharacter(e))
+				//log.Printf("query: %s", fmt.Sprintf(searchByCitationQuery, weight/len(target.Keywords), removeUnavailableCharacter(e), weight/len(target.Keywords)))
+			}
+			for i := 0; i < len(ids); i++ {
+				for tryTime := 0; ; tryTime++ {
+					if tryTime >= 3 {
+						log.Panic("try 3 times to recovery the es error, but failed\n")
+					}
+					res, err := es.Update("auto-complete", ids[i], bytes.NewBufferString(querys[i]))
+					createdNum := checkAutoSuccess(err, res)
+					if createdNum == -1 {
+						checkESReadyRetry()
+					} else {
+						totalCreatedNum += createdNum
+						break
+					}
+				}
+			}
+		}
+	}
+}
+
+func searchPaper(query bytes.Buffer) (map[string]interface{}, error) {
+	var res map[string]interface{}
+	resp, err := es.Search(
+		es.Search.WithContext(context.Background()),
+		es.Search.WithIndex("papers"),
+		es.Search.WithBody(&query),
+		es.Search.WithTrackTotalHits(true),
+		es.Search.WithPretty(),
+	)
+	if err != nil {
+		log.Printf("Error getting response: %s\n", err)
+	}
+	if resp.IsError() {
+		raw := map[string]interface{}{}
+		errStr := "http from ES responses error! \n"
+		if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+			errStr += fmt.Sprintf("parse error response body error:\n%s", err.Error())
+		} else {
+			_, success := raw["error"].(map[string]interface{})
+			if success {
+				errStr += fmt.Sprintf("ES http response Errors:\nstatus:%s\n%s\n%s\n%s\n",
+					resp.Status(),
+					raw["error"].(map[string]interface{})["type"].(string),
+					raw["error"].(map[string]interface{})["reason"].(string),
+				)
+			} else {
+				errStr += fmt.Sprintf("ES http response Errors:\n%s", raw["error"])
+			}
+			return nil, errors.New(errStr)
+		}
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return nil, errors.New(fmt.Sprintf("Error parsing the response body: %s\n", err))
+	}
+	return res, nil
+}
 
 func importAutoPaperToES(targets []*types.Paper, logDetail bool, createdNumChan chan int) {
 	success := false
@@ -62,12 +171,12 @@ func importAutoPaperToES(targets []*types.Paper, logDetail bool, createdNumChan 
 		var querys []string
 		ids = append(ids, removeUnavailableCharacter(url.QueryEscape(target.Title)))
 		weight := int(math.Min(10000, 1+(float64(target.NCitation)-1000)*0.1))
-		querys = append(querys, fmt.Sprintf(autoUpdateQuery, weight, removeUnavailableCharacter(target.Title), weight))
+		querys = append(querys, fmt.Sprintf(searchByCitationQuery, weight, removeUnavailableCharacter(target.Title), weight))
 		for _, e := range target.Keywords {
 			ids = append(ids, url.QueryEscape(removeUnavailableCharacter(e)))
-			querys = append(querys, fmt.Sprintf(autoUpdateQuery, weight/len(target.Keywords), removeUnavailableCharacter(e), weight/len(target.Keywords)))
+			querys = append(querys, fmt.Sprintf(searchByCitationQuery, weight/len(target.Keywords), removeUnavailableCharacter(e), weight/len(target.Keywords)))
 			//log.Printf("id : %s", removeUnavailableCharacter(e))
-			//log.Printf("query: %s", fmt.Sprintf(autoUpdateQuery, weight/len(target.Keywords), removeUnavailableCharacter(e), weight/len(target.Keywords)))
+			//log.Printf("query: %s", fmt.Sprintf(searchByCitationQuery, weight/len(target.Keywords), removeUnavailableCharacter(e), weight/len(target.Keywords)))
 		}
 		for i := 0; i < len(ids); i++ {
 			for tryTime := 0; ; tryTime++ {
