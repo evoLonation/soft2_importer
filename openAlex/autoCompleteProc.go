@@ -70,7 +70,7 @@ func (p *AutoCompleteContext) Import() {
 		for _, hit := range res["hits"].(map[string]interface{})["hits"].([]interface{}) {
 			fields := hit.(map[string]interface{})["fields"].(map[string]interface{})
 			title := fields["title"].([]interface{})[0].(string)
-			nCitation := fields["n_citation"].([]interface{})[0].(int)
+			nCitation := fields["n_citation"].([]interface{})[0].(float64)
 			keywords := fields["keywords"].([]interface{})
 
 			var ids []string
